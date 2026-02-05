@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Search, MoreVertical, X, Edit, Trash2, MapPin, Phone, Calendar, Store, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { createRestaurant, getRestaurants, deleteRestaurant, updateRestaurant } from '../services/api';
+import type { Restaurant, CreateRestaurantPayload } from '../types/api';
 import { useToast } from '../context/ToastContext';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { TableSkeleton } from '../components/ui/Skeleton';
@@ -28,7 +29,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function RestaurantsPage() {
     const { showToast } = useToast();
-    const [restaurants, setRestaurants] = useState<any[]>([]);
+    const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -41,12 +42,12 @@ export default function RestaurantsPage() {
     const [restaurantToDelete, setRestaurantToDelete] = useState<{ id: string, name: string } | null>(null);
 
     // Form State
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<CreateRestaurantPayload>({
         name: '',
         phone: '',
         password: '',
         address: '',
-        expiryDate: ''
+        expiryDate: '',
     });
     const [submitting, setSubmitting] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);

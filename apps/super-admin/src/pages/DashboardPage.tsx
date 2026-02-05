@@ -1,38 +1,33 @@
 
 import { useEffect, useState } from 'react';
-import { DollarSign, TrendingUp, Users } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, AlertTriangle } from 'lucide-react';
 import { getSuperAdminStats } from '../services/api';
+import type { SuperAdminStats } from '../types/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function DashboardPage() {
-    const [statsData, setStatsData] = useState({
+    const [statsData, setStatsData] = useState<SuperAdminStats>({
         activeSubscribers: 0,
         monthlyRevenue: 0,
         growth: 0,
         restaurantsGrowth: 0,
         revenueGrowth: 0,
         yearlyGrowth: 0,
-        chartData: []
+        chartData: [],
     });
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
+                setLoading(true);
+                setError(null);
                 const data = await getSuperAdminStats();
                 setStatsData(data);
-            } catch (error) {
-                console.error("Stats fetching failed, using fallback:", error);
-                // Fallback to 0 if server is down
-                setStatsData({
-                    activeSubscribers: 0,
-                    monthlyRevenue: 0,
-                    growth: 0,
-                    restaurantsGrowth: 0,
-                    revenueGrowth: 0,
-                    yearlyGrowth: 0,
-                    chartData: []
-                });
+            } catch (err) {
+                console.error('Stats fetching failed:', err);
+                setError('Statistik maʼlumotlarni yuklashda xatolik yuz berdi. Keyinroq yana urinib ko‘ring.');
             } finally {
                 setLoading(false);
             }
@@ -75,7 +70,15 @@ export default function DashboardPage() {
 
     return (
         <div>
-            <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
+            <div className="flex items-center justify-between mb-6 gap-4">
+                <h2 className="text-2xl font-bold">Dashboard</h2>
+                {error && (
+                    <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 max-w-md">
+                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                        <span>{error}</span>
+                    </div>
+                )}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {stats.map((stat, index) => {

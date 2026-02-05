@@ -1,7 +1,16 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage.tsx';
 import DashboardLayout from './layouts/DashboardLayout.tsx';
 import DashboardPage from './pages/DashboardPage.tsx';
+import ReportsPage from './pages/ReportsPage.tsx';
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
 
 function App() {
   return (
@@ -9,11 +18,13 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
-        <Route path="/" element={<DashboardLayout />}>
+        <Route path="/" element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }>
           <Route index element={<DashboardPage />} />
-          <Route path="orders" element={<div className="text-slate-500">Buyurtmalar tarixi (Tez orada)</div>} />
-          <Route path="menu" element={<div className="text-slate-500">Menu boshqaruvi (Tez orada)</div>} />
-          <Route path="settings" element={<div className="text-slate-500">Sozlamalar (Tez orada)</div>} />
+          <Route path="reports" element={<ReportsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

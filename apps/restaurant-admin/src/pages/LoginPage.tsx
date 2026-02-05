@@ -19,8 +19,13 @@ export default function LoginPage() {
         try {
             await login(phone, password);
             navigate('/');
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Kirishda xatolik yuz berdi!');
+        } catch (err: unknown) {
+            const e = err as { response?: { data?: { message?: string } }; code?: string };
+            if (e?.code === 'ERR_NETWORK' || !e?.response) {
+                setError('Serverga ulanib bo\'lmadi. Iltimos, backend (NestJS) ni ishga tushiring: terminalda "cd apps/backend" keyin "npm run start:dev" bajariling. Backend port 3000 da ishlashi kerak.');
+            } else {
+                setError(e.response?.data?.message || 'Kirishda xatolik yuz berdi!');
+            }
         } finally {
             setLoading(false);
         }

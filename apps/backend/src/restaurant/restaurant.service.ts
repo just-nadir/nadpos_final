@@ -2,6 +2,15 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcrypt';
 
+/** Auth bilan mos: 9 xonali 9 bilan boshlansa 998 qo‘shiladi */
+function normalizePhone(phone: string): string {
+    const digits = String(phone || '').replace(/\D/g, '');
+    if (digits.length === 9 && digits.startsWith('9')) {
+        return '998' + digits;
+    }
+    return digits || String(phone).trim();
+}
+
 @Injectable()
 export class RestaurantService {
     constructor(private prisma: PrismaService) { }
@@ -44,16 +53,15 @@ export class RestaurantService {
     }
 
     async create(data: any) {
-        // Check if phone exists
+        const phone = normalizePhone(data.phone);
         const existing = await this.prisma.restaurant.findUnique({
-            where: { phone: data.phone }
+            where: { phone },
         });
 
         if (existing) {
             throw new ConflictException('Bu telefon raqam allaqachon mavjud');
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(data.password, 10);
 
         const endDate = data.expiryDate ? new Date(data.expiryDate) : new Date(new Date().setFullYear(new Date().getFullYear() + 1));
@@ -61,7 +69,7 @@ export class RestaurantService {
         return this.prisma.restaurant.create({
             data: {
                 name: data.name,
-                phone: data.phone,
+                phone,
                 password: hashedPassword,
                 address: data.address,
                 licenses: {
@@ -77,25 +85,27 @@ export class RestaurantService {
     }
 
     async update(id: string, data: any) {
-        // Optional: prevent changing phone if it exists on another restaurant
-        if (data.phone) {
-            const existing = await this.prisma.restaurant.findFirst({
-                where: {
-                    phone: data.phone,
-                    NOT: { id: id }
+        const current = await this.prisma.restaurant.findUnique({ where: { id }, select: { phone: true } });
+        if (data.phone != null) {
+            const phone = normalizePhone(data.phone);
+            if (current && phone !== current.phone) {
+                const existing = await this.prisma.restaurant.findFirst({
+                    where: { phone, NOT: { id } },
+                });
+                if (existing) {
+                    throw new ConflictException('Bu telefon raqam boshqa restoranda mavjud');
                 }
-            });
-            if (existing) {
-                throw new ConflictException('Bu telefon raqam boshqa restoranda mavjud');
             }
         }
 
-        // Handle Password update if provided
         let updateData: any = { ...data };
-        if (data.password) {
+        if (data.password && String(data.password).trim()) {
             updateData.password = await bcrypt.hash(data.password, 10);
         } else {
             delete updateData.password;
+        }
+        if (updateData.phone != null) {
+            updateData.phone = normalizePhone(updateData.phone);
         }
 
         // Extract expiryDate to handle separately

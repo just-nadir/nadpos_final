@@ -35,6 +35,9 @@ model Restaurant {
   
   licenses    License[]
   syncLogs    SyncLog[]
+  sales       Sale[]
+  shifts      Shift[]
+  cancelledOrders CancelledOrder[]
 
   @@map("restaurants")
 }
@@ -77,4 +80,57 @@ model Config {
   updatedAt DateTime @updatedAt
 
   @@map("config")
+}
+
+// Mirror tables for POS sync (restaurant-admin reports)
+model Sale {
+  id            String   @id
+  restaurantId  String
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  check_number  Int?
+  date          DateTime
+  total_amount  Float    @default(0)
+  subtotal      Float?
+  discount      Float?
+  payment_method String?
+  customer_id   String?
+  waiter_name   String?
+  guest_count   Int?
+  items_json    String?  // JSON string
+  shift_id      String?
+  table_name    String?
+
+  @@map("sales")
+}
+
+model Shift {
+  id             String   @id
+  restaurantId   String
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  shift_number   Int?
+  cashier_id     String?
+  cashier_name   String?
+  start_time     DateTime
+  end_time       DateTime?
+  total_cash     Float    @default(0)
+  total_card     Float    @default(0)
+  total_transfer Float    @default(0)
+  total_debt     Float    @default(0)
+  total_sales    Float    @default(0)
+
+  @@map("shifts")
+}
+
+model CancelledOrder {
+  id            String   @id
+  restaurantId  String
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table_id      String?
+  date          DateTime
+  total_amount  Float    @default(0)
+  waiter_name   String?
+  items_json    String?
+  reason        String?
+
+  @@map("cancelled_orders")
 }

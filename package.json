@@ -8,7 +8,7 @@
         "apps/admin-panel",
         "apps/pos-desktop",
         "apps/landing-page",
-        "apps/waiter-pwa"
+        "apps/waiter-pwa","apps/restaurant-admin"
     ],
     "overrides": {
         "react": "18.3.1",

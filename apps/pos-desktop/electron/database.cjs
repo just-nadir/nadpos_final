@@ -862,6 +862,14 @@ function getRestaurantId() {
     return RESTAURANT_ID;
 }
 
+/** Login dan keyin save-settings chaqilganda RESTAURANT_ID ni yangilash uchun */
+function setRestaurantId(id) {
+    if (id && typeof id === 'string') {
+        RESTAURANT_ID = id;
+        console.log("🏢 RESTAURANT_ID yangilandi:", RESTAURANT_ID);
+    }
+}
+
 module.exports = {
     db,
     initDB,
@@ -870,8 +878,9 @@ module.exports = {
     hashPIN,
     uuidv4,
     getRestaurantId,
+    setRestaurantId,
     RESTAURANT_ID,
     runOptimize,
-    addToSyncQueue // Export
+    addToSyncQueue
 };
 

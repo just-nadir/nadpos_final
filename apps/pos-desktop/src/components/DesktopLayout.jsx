@@ -129,9 +129,9 @@ const DesktopLayout = () => {
     );
   }
 
-  // Restoran biriktirilmagan bo'lsa — telefon + parol so'raladi (kompyuterni yangi qilishdan keyin)
+  // Restoran hisobi (telefon + parol) kerak: restaurant_id yoki auth_token yo'q bo'lsa — sinx uchun token kerak
   if (!user) {
-    if (window.electron && !settings?.restaurant_id) {
+    if (window.electron && (!settings?.restaurant_id || !settings?.auth_token)) {
       return <Login />;
     }
     return <PinLogin />;

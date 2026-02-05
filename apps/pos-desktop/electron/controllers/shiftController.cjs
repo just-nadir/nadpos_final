@@ -1,4 +1,5 @@
-const { db, notify } = require('../database.cjs');
+const { db, notify, addToSyncQueue } = require('../database.cjs');
+const { triggerSyncNow } = require('../services/syncService.cjs');
 const log = require('electron-log');
 // const telegramController = require('./telegramController.cjs');
 const crypto = require('crypto');
@@ -116,6 +117,38 @@ module.exports = {
             );
 
             log.info(`Smena yopildi (DB Updated): ID ${shiftId}`);
+
+            // Sync shift to backend (for restaurant-admin reports)
+            let totalDebt = 0;
+            sales.forEach(sale => {
+                if (sale.payment_method === 'split') {
+                    try {
+                        const parsed = JSON.parse(sale.items_json || '{}');
+                        (parsed.paymentDetails || []).forEach(d => {
+                            if (d.method === 'debt') totalDebt += d.amount || 0;
+                        });
+                    } catch (e) { }
+                } else if (sale.payment_method === 'debt') {
+                    totalDebt += sale.total_amount;
+                }
+            });
+            const closedShift = db.prepare('SELECT * FROM shifts WHERE id = ?').get(shiftId);
+            if (closedShift) {
+                addToSyncQueue('shifts', shiftId, 'update', {
+                    id: closedShift.id,
+                    shift_number: closedShift.shift_number,
+                    cashier_id: closedShift.cashier_id || null,
+                    cashier_name: closedShift.cashier_name,
+                    start_time: closedShift.start_time,
+                    end_time: closedShift.end_time,
+                    total_cash: totalCash,
+                    total_card: totalCard,
+                    total_transfer: totalTransfer,
+                    total_debt: totalDebt,
+                    total_sales: totalSales
+                });
+                triggerSyncNow();
+            }
 
             // Notify UI IMMEDIATELY before printer
             notify('shift-status', 'closed');

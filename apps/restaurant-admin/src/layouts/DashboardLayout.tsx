@@ -1,7 +1,7 @@
-
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Settings, LogOut, Menu } from 'lucide-react';
+import { LayoutDashboard, LogOut, BarChart3 } from 'lucide-react';
 import { logout, getCurrentUser } from '../services/auth.service';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import clsx from 'clsx';
 
 export default function DashboardLayout() {
@@ -16,9 +16,7 @@ export default function DashboardLayout() {
 
     const navItems = [
         { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-        { path: '/orders', label: 'Buyurtmalar', icon: ShoppingBag },
-        { path: '/menu', label: 'Menu', icon: Menu },
-        { path: '/settings', label: 'Sozlamalar', icon: Settings },
+        { path: '/reports', label: 'Hisobotlar', icon: BarChart3 },
     ];
 
     return (
@@ -63,7 +61,9 @@ export default function DashboardLayout() {
 
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto p-8">
-                <Outlet />
+                <ErrorBoundary>
+                    <Outlet />
+                </ErrorBoundary>
             </main>
         </div>
     );

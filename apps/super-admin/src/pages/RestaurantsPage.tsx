@@ -123,8 +123,9 @@ export default function RestaurantsPage() {
             setIsModalOpen(false);
             setFormData({ name: '', phone: '', password: '', address: '', expiryDate: '' });
             fetchRestaurants();
-        } catch (error) {
-            showToast('Xatolik yuz berdi! Telefon raqam band bo\'lishi mumkin.', 'error');
+        } catch (error: any) {
+            const msg = error?.response?.data?.message || error?.message || 'Xatolik yuz berdi! Telefon raqam band bo\'lishi mumkin.';
+            showToast(msg, 'error');
         } finally {
             setSubmitting(false);
         }

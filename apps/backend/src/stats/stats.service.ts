@@ -104,4 +104,73 @@ export class StatsService {
 
         return cumulativeData;
     }
+
+    // --- Restaurant-scoped stats (mirror tables) ---
+    async getRestaurantSales(restaurantId: string, startDate: string, endDate: string) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        return this.prisma.sale.findMany({
+            where: {
+                restaurantId,
+                date: { gte: start, lte: end },
+            },
+            orderBy: { date: 'desc' },
+        });
+    }
+
+    async getRestaurantTrend(restaurantId: string, startDate: string, endDate: string) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        const sales = await this.prisma.sale.findMany({
+            where: { restaurantId, date: { gte: start, lte: end } },
+            select: { date: true, total_amount: true },
+        });
+        const byDay = new Map<string, number>();
+        for (const s of sales) {
+            const day = s.date.toISOString().slice(0, 10);
+            byDay.set(day, (byDay.get(day) ?? 0) + s.total_amount);
+        }
+        return Array.from(byDay.entries())
+            .map(([day, total]) => ({ day, total }))
+            .sort((a, b) => a.day.localeCompare(b.day));
+    }
+
+    async getRestaurantShifts(restaurantId: string, startDate: string, endDate: string) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        return this.prisma.shift.findMany({
+            where: {
+                restaurantId,
+                start_time: { gte: start, lte: end },
+            },
+            orderBy: { start_time: 'desc' },
+        });
+    }
+
+    async getRestaurantShiftSales(restaurantId: string, shiftId: string) {
+        return this.prisma.sale.findMany({
+            where: { restaurantId, shift_id: shiftId },
+            orderBy: { date: 'desc' },
+        });
+    }
+
+    async getRestaurantCancelled(restaurantId: string, startDate: string, endDate: string) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        return this.prisma.cancelledOrder.findMany({
+            where: {
+                restaurantId,
+                date: { gte: start, lte: end },
+            },
+            orderBy: { date: 'desc' },
+        });
+    }
 }

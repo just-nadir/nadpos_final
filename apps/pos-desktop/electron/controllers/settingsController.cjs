@@ -1,4 +1,4 @@
-const { db, notify } = require('../database.cjs');
+const { db, notify, setRestaurantId } = require('../database.cjs');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -13,8 +13,9 @@ module.exports = {
   saveSettings: (settingsObj) => {
     const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
 
-    // Agar restaurant_id o'zgarsa, barcha jadvallardagi restaurant_id ni ham yangilaymiz
+    // Agar restaurant_id o'zgarsa, barcha jadvallardagi restaurant_id ni ham yangilaymiz va modul o'zgaruvchisini yangilaymiz
     if (settingsObj.restaurant_id) {
+      setRestaurantId(settingsObj.restaurant_id);
       const updateTables = [
         'users', 'kitchens', 'sms_templates', 'halls', 'tables',
         'categories', 'products', 'orders', 'sales', 'sale_items',
@@ -22,7 +23,6 @@ module.exports = {
       ];
 
       updateTables.forEach(table => {
-        // Jadval mavjudligini tekshirish (shart emas, lekin xavfsiz)
         try {
           db.prepare(`UPDATE ${table} SET restaurant_id = ?`).run(settingsObj.restaurant_id);
         } catch (e) {

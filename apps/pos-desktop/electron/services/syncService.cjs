@@ -2,15 +2,19 @@
 const axios = require('axios');
 const log = require('electron-log');
 const { db } = require('../database.cjs');
-const { machineId } = require('node-machine-id');
 
-const SYNC_URL = 'http://localhost:3000/sync/push';
+const SYNC_URL = process.env.BACKEND_URL ? `${process.env.BACKEND_URL.replace(/\/$/, '')}/sync/push` : 'http://localhost:3000/sync/push';
 const CHECK_INTERVAL = 60000; // 1 minute
 
 let isSyncing = false;
 
 async function startSyncService() {
     log.info("Sync Service Started...");
+
+    // Birinchi sinxni 10 soniyadan keyin (60 soniya kutmaslik uchun)
+    setTimeout(() => {
+        processSyncQueue().catch((err) => log.error("Initial sync error:", err.message));
+    }, 10000);
 
     setInterval(async () => {
         if (isSyncing) return;
@@ -22,16 +26,32 @@ async function startSyncService() {
     }, CHECK_INTERVAL);
 }
 
+/** Savdo/bekor/smena yopilgandan keyin darhol sinxni boshlash uchun (60 soniya kutmaslik) */
+function triggerSyncNow() {
+    setImmediate(() => {
+        processSyncQueue().catch((err) => log.error("Trigger sync error:", err.message));
+    });
+}
+
+function getAuthToken() {
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'auth_token'").get();
+    return row ? row.value : null;
+}
+
 async function processSyncQueue() {
-    // 1. Check Queue
     const queueItems = db.prepare(`SELECT * FROM sync_queue ORDER BY created_at ASC LIMIT 50`).all();
     if (queueItems.length === 0) return;
+
+    const token = getAuthToken();
+    if (!token) {
+        log.warn("Sync: No auth_token in settings, skipping. Login to POS to enable sync.");
+        return;
+    }
 
     isSyncing = true;
     log.info(`Sync: Processing ${queueItems.length} items...`);
 
     try {
-        const myMachineId = await machineId();
 
         // 2. Format Payload
         const payload = {
@@ -52,20 +72,24 @@ async function processSyncQueue() {
         // For now, let's just log sending. Implementation of Token storage in Electron is needed.
         // Assuming we pass "x-machine-id" header and Backend validates it.
 
-        // TEMPORARY: Just logging
-        // await axios.post(SYNC_URL, payload); 
+        await axios.post(SYNC_URL, payload, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            timeout: 30000
+        });
 
-        log.info("Sync: Batch sent successfully (Simulation).");
-
-        // 4. Delete from Queue
-        // const ids = queueItems.map(i => i.id);
-        // db.prepare(`DELETE FROM sync_queue WHERE id IN (${ids.join(',')})`).run();
-
+        const ids = queueItems.map(i => i.id);
+        const placeholders = ids.map(() => '?').join(',');
+        db.prepare(`DELETE FROM sync_queue WHERE id IN (${placeholders})`).run(...ids);
+        log.info("Sync: Batch sent successfully, queue cleared.");
     } catch (e) {
         log.error("Sync Failed:", e.message);
+        if (e.response) log.error("Response status:", e.response.status, e.response.data);
     } finally {
         isSyncing = false;
     }
 }
 
-module.exports = { startSyncService };
+module.exports = { startSyncService, triggerSyncNow };

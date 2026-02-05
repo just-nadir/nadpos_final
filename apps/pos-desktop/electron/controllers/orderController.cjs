@@ -1,5 +1,6 @@
 const { db, notify, addToSyncQueue } = require('../database.cjs');
 const printerService = require('../services/printerService.cjs');
+const { triggerSyncNow } = require('../services/syncService.cjs');
 const log = require('electron-log');
 const crypto = require('crypto');
 const shiftController = require('../controllers/shiftController.cjs'); // YANGI
@@ -351,6 +352,7 @@ module.exports = {
 
                 // Add to Sync Queue
                 addToSyncQueue('sales', saleId, 'create', saleData);
+                triggerSyncNow(); // Restoran admin da tez ko‘rinishi uchun darhol sinx boshlash
 
                 // --- YANGI: SKLAD (Stock) ni kamaytirish va SALE_ITEMS ga yozish ---
                 items.forEach(item => {
@@ -548,7 +550,16 @@ module.exports = {
                     db.prepare(`INSERT INTO cancelled_orders (id, table_id, date, total_amount, waiter_name, items_json, reason) VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
                         cancelledId, cancelledData.table_id, cancelledData.date, cancelledData.total_amount, cancelledData.waiter_name, cancelledData.items_json, cancelledData.reason
                     );
-                    // addToSyncQueue removed
+                    addToSyncQueue('cancelled_orders', cancelledId, 'create', {
+                        id: cancelledId,
+                        table_id: cancelledData.table_id,
+                        date: cancelledData.date,
+                        total_amount: cancelledData.total_amount,
+                        waiter_name: cancelledData.waiter_name,
+                        items_json: cancelledData.items_json,
+                        reason: cancelledData.reason
+                    });
+                    triggerSyncNow();
                 }
 
                 // 3. Tozalash

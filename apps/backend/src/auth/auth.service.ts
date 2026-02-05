@@ -20,11 +20,20 @@ export class AuthService {
             return result;
         }
 
-        // 2. Check Restaurant
-        const restaurant = await this.prisma.restaurant.findUnique({ where: { phone: username } });
-        if (restaurant && (await bcrypt.compare(pass, restaurant.password))) {
-            const { password, ...result } = restaurant;
-            return { ...result, role: 'RESTAURANT' }; // Append role
+        // 2. Check Restaurant (telefon: aniq yoki faqat raqamlar, 998 qo‘shilgan)
+        const byPhone = await this.prisma.restaurant.findUnique({ where: { phone: username } });
+        if (byPhone && (await bcrypt.compare(pass, byPhone.password))) {
+            const { password, ...result } = byPhone;
+            return { ...result, role: 'RESTAURANT' };
+        }
+        const digits = username.replace(/\D/g, '');
+        const normalized = digits.length === 9 && digits.startsWith('9') ? '998' + digits : digits;
+        if (normalized !== username) {
+            const restaurant = await this.prisma.restaurant.findUnique({ where: { phone: normalized } });
+            if (restaurant && (await bcrypt.compare(pass, restaurant.password))) {
+                const { password, ...result } = restaurant;
+                return { ...result, role: 'RESTAURANT' };
+            }
         }
 
         return null;
@@ -36,31 +45,33 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        // Machine ID Check for Restaurants
+        // Machine ID Check for Restaurants (skip for Web Panel — restoran admin sahifasi)
         if (user.role === 'RESTAURANT') {
-            if (!loginDto.machineId) {
-                throw new UnauthorizedException('Machine ID is required for restaurants');
+            const isWebPanel = loginDto.machineId === 'WEB-PANEL';
+
+            if (!isWebPanel) {
+                if (!loginDto.machineId) {
+                    throw new UnauthorizedException('Machine ID is required for restaurants');
+                }
+                const restaurant = await this.prisma.restaurant.findUnique({ where: { id: user.id } });
+                if (!restaurant) {
+                    throw new UnauthorizedException('Restoran ma\'lumotlari topilmadi');
+                }
+                if (!restaurant.machineId) {
+                    await this.prisma.restaurant.update({
+                        where: { id: user.id },
+                        data: { machineId: loginDto.machineId },
+                    });
+                } else if (restaurant.machineId !== loginDto.machineId) {
+                    throw new UnauthorizedException('This license is bound to another device.');
+                }
             }
 
-            // Fetch fresh restaurant data to check machineId
+            // Litsenziya muddati tekshiruvi (Web Panel va POS uchun)
             const restaurant = await this.prisma.restaurant.findUnique({ where: { id: user.id } });
-
             if (!restaurant) {
                 throw new UnauthorizedException('Restoran ma\'lumotlari topilmadi');
             }
-
-            if (!restaurant.machineId) {
-                // First time login: Bind Machine ID
-                await this.prisma.restaurant.update({
-                    where: { id: user.id },
-                    data: { machineId: loginDto.machineId },
-                });
-            } else if (restaurant.machineId !== loginDto.machineId) {
-                // Machine ID mismatch
-                throw new UnauthorizedException('This license is bound to another device.');
-            }
-
-            // Litsenziya muddati tekshiruvi (UTC sana — checkLicense bilan bir xil)
             const license = await this.prisma.license.findFirst({
                 where: { restaurantId: restaurant.id },
                 orderBy: { endDate: 'desc' },

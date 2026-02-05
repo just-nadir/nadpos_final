@@ -27,7 +27,7 @@ const Sidebar = ({ activePage, onNavigate, onLogout, user, onCloseShift, syncSta
   ];
 
   // Ruxsatlar mantiqi
-  const filteredItems = menuItems.filter(item => {
+  let filteredItems = menuItems.filter(item => {
     // Agar permissions array mavjud bo'lsa, shundan foydalanamiz
     if (user?.permissions && Array.isArray(user.permissions) && user.permissions.length > 0) {
       return user.permissions.includes(item.id);
@@ -50,6 +50,11 @@ const Sidebar = ({ activePage, onNavigate, onLogout, user, onCloseShift, syncSta
 
     return false;
   });
+
+  // Sidebar menyu hech qachon bo'sh bo'lmasin: noma'lum rol/permissions da barcha bo'limlar ko'rinsin
+  if (filteredItems.length === 0) {
+    filteredItems = menuItems;
+  }
 
   return (
     <div className="w-[100px] bg-card border-r border-border h-screen flex flex-col items-center py-4 z-10 transition-colors duration-300">

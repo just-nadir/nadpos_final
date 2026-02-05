@@ -44,7 +44,14 @@ const Login = () => {
             });
 
             if (res.data.access_token) {
-                login(res.data.user, res.data.access_token);
+                const userData = res.data.user;
+                login(userData, res.data.access_token);
+                // Restoran ID ni mahalliy sozlamalarga yozish (litsenziya tekshiruvi va boshqa funksiyalar uchun)
+                if (window.electron?.ipcRenderer && userData?.id) {
+                    window.electron.ipcRenderer.invoke('get-settings').then((current) => {
+                        return window.electron.ipcRenderer.invoke('save-settings', { ...current, restaurant_id: userData.id });
+                    }).catch((e) => console.warn('Restaurant ID saqlash:', e));
+                }
             }
 
         } catch (err) {

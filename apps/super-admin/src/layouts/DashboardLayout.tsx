@@ -1,6 +1,6 @@
 
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Store, LogOut } from 'lucide-react';
+import { LayoutDashboard, Store, Settings, LogOut } from 'lucide-react';
 import { logout } from '../services/auth.service';
 import clsx from 'clsx'; // Make sure clsx is installed
 
@@ -16,6 +16,7 @@ export default function DashboardLayout() {
     const navItems = [
         { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/restaurants', label: 'Restoranlar', icon: Store },
+        { path: '/settings', label: 'Sozlamalar', icon: Settings },
     ];
 
     return (

@@ -3,7 +3,7 @@ import {
   Save, Printer, Database, Store, Receipt, Percent, RefreshCw, ChefHat,
   ShoppingBag, Trash2, ArrowUpRight, ArrowDownRight, Clock,
   ChevronLeft, Search, Plus, PcCase, Edit2, Check, X, QrCode, Monitor, Send,
-  RotateCcw, ShieldCheck, UserCog, Users, Shield, Key, Coins, CheckCircle,
+  ShieldCheck, UserCog, Users, Shield, Key, Coins, CheckCircle,
   MessageSquare, FileText, History, Settings as SettingsIcon, Smartphone
 } from 'lucide-react';
 import QRCode from "react-qr-code";

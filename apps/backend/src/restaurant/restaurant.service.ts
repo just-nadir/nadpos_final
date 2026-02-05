@@ -118,7 +118,10 @@ export class RestaurantService {
             if (latestLicense) {
                 await this.prisma.license.update({
                     where: { id: latestLicense.id },
-                    data: { endDate: new Date(expiryDate) }
+                    data: {
+                        endDate: new Date(expiryDate),
+                        status: 'ACTIVE', // Muddat uzaytirilganda litsenziyani qayta aktiv qilish
+                    }
                 });
             } else {
                 // If no license exists, create one

@@ -59,6 +59,22 @@ export class AuthService {
                 // Machine ID mismatch
                 throw new UnauthorizedException('This license is bound to another device.');
             }
+
+            // Litsenziya muddati tekshiruvi (UTC sana — checkLicense bilan bir xil)
+            const license = await this.prisma.license.findFirst({
+                where: { restaurantId: restaurant.id },
+                orderBy: { endDate: 'desc' },
+            });
+            if (!license) {
+                throw new UnauthorizedException('Litsenziya muddati tugagan');
+            }
+            const todayUtc = new Date();
+            const todayStr = todayUtc.getUTCFullYear() + '-' + String(todayUtc.getUTCMonth() + 1).padStart(2, '0') + '-' + String(todayUtc.getUTCDate()).padStart(2, '0');
+            const endDate = new Date(license.endDate);
+            const endStr = endDate.getUTCFullYear() + '-' + String(endDate.getUTCMonth() + 1).padStart(2, '0') + '-' + String(endDate.getUTCDate()).padStart(2, '0');
+            if (endStr < todayStr) {
+                throw new UnauthorizedException('Litsenziya muddati tugagan');
+            }
         }
 
         const payload = {
@@ -75,5 +91,37 @@ export class AuthService {
 
     async hashPassword(password: string) {
         return bcrypt.hash(password, 10);
+    }
+
+    /** POS blok ekrani uchun: faqat litsenziya sanasi tekshiriladi (machineId login da tekshiriladi). techSupportPhone super-admin da sozlangan raqam. */
+    async checkLicense(restaurantId: string, _machineId: string): Promise<{ valid: boolean; endDate?: string; techSupportPhone?: string | null }> {
+        const techConfig = await this.prisma.config.findUnique({ where: { key: 'tech_support_phone' } });
+        const techSupportPhone = techConfig?.value ?? null;
+
+        const restaurant = await this.prisma.restaurant.findUnique({
+            where: { id: restaurantId },
+            include: {
+                licenses: {
+                    orderBy: { endDate: 'desc' },
+                    take: 1,
+                },
+            },
+        });
+        if (!restaurant) {
+            return { valid: false, techSupportPhone };
+        }
+        const license = restaurant.licenses[0];
+        if (!license) {
+            return { valid: false, techSupportPhone };
+        }
+        // Sana bo'yicha: faqat UTC sana (YYYY-MM-DD) taqqoslanadi, vaqt zonalariga qaramay
+        const todayUtc = new Date();
+        const todayStr = todayUtc.getUTCFullYear() + '-' + String(todayUtc.getUTCMonth() + 1).padStart(2, '0') + '-' + String(todayUtc.getUTCDate()).padStart(2, '0');
+        const endDate = new Date(license.endDate);
+        const endStr = endDate.getUTCFullYear() + '-' + String(endDate.getUTCMonth() + 1).padStart(2, '0') + '-' + String(endDate.getUTCDate()).padStart(2, '0');
+        if (endStr < todayStr) {
+            return { valid: false, endDate: license.endDate.toISOString(), techSupportPhone };
+        }
+        return { valid: true, endDate: license.endDate.toISOString(), techSupportPhone };
     }
 }

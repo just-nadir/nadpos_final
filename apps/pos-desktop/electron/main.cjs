@@ -30,6 +30,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    title: 'NadPOS Restoran',
     backgroundColor: '#f3f4f6',
     webPreferences: {
       nodeIntegration: false,

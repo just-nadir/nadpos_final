@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import DashboardPage from './pages/DashboardPage';
 import RestaurantsPage from './pages/RestaurantsPage';
+import SettingsPage from './pages/SettingsPage';
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const token = localStorage.getItem('token');
@@ -31,6 +32,7 @@ function App() {
         >
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="restaurants" element={<RestaurantsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route index element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

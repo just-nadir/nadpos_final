@@ -69,3 +69,12 @@ model SyncLog {
   
   @@map("sync_logs")
 }
+
+model Config {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String?
+  updatedAt DateTime @updatedAt
+
+  @@map("config")
+}

@@ -6,6 +6,7 @@ import { useIpcListener } from '../hooks/useIpcListener';
 import Sidebar from './Sidebar';
 import TablesGrid from './TablesGrid';
 import OrderSummary from './OrderSummary';
+import PinLogin from './PinLogin';
 import Login from './Login';
 
 
@@ -28,12 +29,41 @@ const PageLoader = () => (
   </div>
 );
 
+// Litsenziya tugaganda to'liq ekran blok
+const LicenseBlockScreen = ({ onRetry, isChecking, onResetDevice, techSupportPhone }) => (
+  <div className="flex h-screen flex-col items-center justify-center bg-gray-100 p-8">
+    <div className="max-w-md rounded-3xl bg-white p-10 shadow-2xl border-2 border-red-200 text-center">
+      <ShieldAlert className="mx-auto mb-6 h-20 w-20 text-red-500" />
+      <h1 className="text-2xl font-bold text-gray-800 mb-2">Litsenziya muddati tugagan</h1>
+      <p className="text-gray-600 mb-2">Dasturdan foydalanish uchun litsenziyani yangilang yoki administrator bilan bog‘laning.</p>
+      {techSupportPhone ? (
+        <p className="text-gray-700 font-semibold mb-6">
+          Texnik qo‘llab-quvvatlash: <a href={`tel:${techSupportPhone.replace(/\s/g, '')}`} className="text-primary hover:underline">{techSupportPhone}</a>
+        </p>
+      ) : (
+        <p className="mb-6" />
+      )}
+      {onRetry && (
+        <button type="button" onClick={onRetry} disabled={isChecking} className="w-full py-3 px-4 bg-primary text-white font-semibold rounded-xl hover:opacity-90 transition-opacity mb-2 disabled:opacity-70 disabled:cursor-not-allowed">
+          {isChecking ? 'Tekshirilmoqda...' : 'Qayta tekshirish'}
+        </button>
+      )}
+      {onResetDevice && (
+        <button type="button" onClick={onResetDevice} className="w-full py-3 px-4 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors mt-2">
+          Boshqa restoranga o‘tish
+        </button>
+      )}
+      <p className="text-sm text-gray-400 mt-6">NadPOS</p>
+    </div>
+  </div>
+);
+
 const DesktopLayout = () => {
-  const { user, logout, loading, toast, showToast, shift, checkShift } = useGlobal(); // shift, checkShift qo'shildi
+  const { user, logout, loading, toast, showToast, shift, checkShift, licenseExpired, checkLicense, settings, techSupportPhone } = useGlobal();
   const [activePage, setActivePage] = useState('pos');
   const [selectedTable, setSelectedTable] = useState(null);
-  const [showShiftModal, setShowShiftModal] = useState(false); // Smena yopish modali uchun
-
+  const [showShiftModal, setShowShiftModal] = useState(false);
+  const [licenseChecking, setLicenseChecking] = useState(false);
   const [syncStatus, setSyncStatus] = useState({ status: 'offline', lastSync: null });
 
   // Printer xatolarini global eshitish
@@ -54,11 +84,57 @@ const DesktopLayout = () => {
     return <div className="flex h-screen items-center justify-center text-gray-500 font-bold bg-gray-100">Tizim yuklanmoqda...</div>;
   }
 
-  // YANGI: Litsenziya tekshiruvi (PAUSED)
+  // Litsenziya tugagan bo'lsa dastur bloklanadi
+  if (licenseExpired) {
+    const handleRetryLicense = async () => {
+      if (typeof window.electron?.ipcRenderer?.invoke !== 'function' || licenseChecking) return;
+      setLicenseChecking(true);
+      try {
+        const s = await window.electron.ipcRenderer.invoke('get-settings');
+        const result = await checkLicense(s || {});
+        if (result?.success) {
+          showToast('success', 'Litsenziya tasdiqlandi');
+        } else if (result?.error) {
+          showToast('error', result.error);
+        }
+      } catch (e) {
+        showToast('error', 'Qayta tekshirish amalga oshmadi');
+      } finally {
+        setLicenseChecking(false);
+      }
+    };
+    const handleResetDevice = async () => {
+      if (!window.electron?.ipcRenderer?.invoke) return;
+      try {
+        const current = await window.electron.ipcRenderer.invoke('get-settings');
+        await window.electron.ipcRenderer.invoke('save-settings', { ...current, restaurant_id: '' });
+        window.location.reload();
+      } catch (e) {
+        showToast('error', 'Amalga oshmadi');
+      }
+    };
+    return (
+      <>
+        {toast && (
+          <div className={cn(
+            "absolute top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl text-white font-bold flex items-center gap-3",
+            toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+          )}>
+            {toast.type === 'success' ? <CheckCircle size={24} /> : <AlertTriangle size={24} />}
+            <span className="text-lg">{toast.msg}</span>
+          </div>
+        )}
+        <LicenseBlockScreen onRetry={handleRetryLicense} isChecking={licenseChecking} onResetDevice={handleResetDevice} techSupportPhone={techSupportPhone} />
+      </>
+    );
+  }
 
-
+  // Restoran biriktirilmagan bo'lsa — telefon + parol so'raladi (kompyuterni yangi qilishdan keyin)
   if (!user) {
-    return <Login />;
+    if (window.electron && !settings?.restaurant_id) {
+      return <Login />;
+    }
+    return <PinLogin />;
   }
 
   const handleLogout = () => {

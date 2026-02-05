@@ -74,4 +74,18 @@ export const deleteRestaurant = async (id: string): Promise<void> => {
     await api.delete(`/restaurants/${id}`);
 };
 
+export interface AppConfig {
+    techSupportPhone: string | null;
+}
+
+export const getConfig = async (): Promise<AppConfig> => {
+    const response = await api.get<AppConfig>('/config');
+    return response.data;
+};
+
+export const updateConfig = async (data: Partial<AppConfig>): Promise<AppConfig> => {
+    const response = await api.patch<AppConfig>('/config', data);
+    return response.data;
+};
+
 export default api;

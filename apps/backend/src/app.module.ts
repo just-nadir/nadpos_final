@@ -7,6 +7,7 @@ import { PrismaService } from './prisma.service';
 import { SyncModule } from './sync/sync.module';
 import { StatsModule } from './stats/stats.module';
 import { RestaurantModule } from './restaurant/restaurant.module';
+import { ConfigModule as ConfigModuleCustom } from './config/config.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { RestaurantModule } from './restaurant/restaurant.module';
     SyncModule,
     StatsModule,
     RestaurantModule,
+    ConfigModuleCustom,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -1,27 +1,45 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-    // Check if any restaurant exists
-    const count = await prisma.restaurant.count();
-    if (count > 0) {
-        console.log('Database already has data. Skipping seed.');
+    // Super Admin (User) — admin / admin123
+    const existingAdmin = await prisma.user.findUnique({ where: { email: 'admin' } });
+    if (!existingAdmin) {
+        const hashedPassword = await bcrypt.hash('admin123', 10);
+        await prisma.user.create({
+            data: {
+                email: 'admin',
+                password: hashedPassword,
+                name: 'Super Admin',
+                role: 'SUPER_ADMIN',
+            },
+        });
+        console.log('Super Admin yaratildi: login=admin, parol=admin123');
+    } else {
+        console.log('Super Admin allaqachon mavjud.');
+    }
+
+    // Create Dummy Restaurant only if none exist
+    const restaurantCount = await prisma.restaurant.count();
+    if (restaurantCount > 0) {
+        console.log('Restoranlar mavjud. Restaurant seed o\'tkazilmadi.');
         return;
     }
 
-    // Create Dummy Restaurant
+    const hashedRestaurantPassword = await bcrypt.hash('test123', 10);
     const restaurant = await prisma.restaurant.create({
         data: {
             name: 'Test Restoran (Chilonzor)',
             phone: '998901234567',
-            password: 'hashed_password_here', // Real app needs hashing
+            password: hashedRestaurantPassword,
             address: 'Chilonzor, Tashkent',
             machineId: 'TEST-MACHINE-ID-001',
             licenses: {
                 create: {
                     startDate: new Date(),
-                    endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)), // +1 year
+                    endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
                     status: 'ACTIVE',
                     price: 300000
                 }
@@ -29,7 +47,7 @@ async function main() {
         },
     });
 
-    console.log(`Created restaurant with id: ${restaurant.id}`);
+    console.log(`Restoran yaratildi, id: ${restaurant.id}`);
 }
 
 main()

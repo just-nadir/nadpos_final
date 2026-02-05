@@ -858,6 +858,10 @@ function addToSyncQueue(tableName, dataId, action, payload) {
     }
 }
 
+function getRestaurantId() {
+    return RESTAURANT_ID;
+}
+
 module.exports = {
     db,
     initDB,

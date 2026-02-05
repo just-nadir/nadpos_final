@@ -49,8 +49,8 @@ function createWindow() {
     win.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
     if (!app.isPackaged) {
-      win.loadURL('http://localhost:5173');
-      console.log("Development rejimida: http://localhost:5173 yuklanmoqda...");
+      win.loadURL('http://localhost:5174');
+      console.log("Development rejimida: http://localhost:5174 yuklanmoqda...");
     } else {
       win.loadFile(path.join(__dirname, '../dist/index.html'));
     }

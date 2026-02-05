@@ -17,14 +17,19 @@ export class RestaurantService {
             orderBy: { createdAt: 'desc' }
         });
 
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
         return restaurants.map(res => {
             const currentLicense = res.licenses[0];
             let status = 'No License';
             let expiry: Date | null = null;
 
             if (currentLicense) {
-                status = currentLicense.status; // ACTIVE, EXPIRED, etc.
                 expiry = currentLicense.endDate;
+                const endDateOnly = new Date(expiry);
+                endDateOnly.setHours(0, 0, 0, 0);
+                status = endDateOnly < now ? 'EXPIRED' : (currentLicense.status || 'ACTIVE');
             }
 
             return {

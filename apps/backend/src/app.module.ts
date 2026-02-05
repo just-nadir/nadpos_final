@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -8,7 +9,13 @@ import { StatsModule } from './stats/stats.module';
 import { RestaurantModule } from './restaurant/restaurant.module';
 
 @Module({
-  imports: [AuthModule, SyncModule, StatsModule, RestaurantModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    AuthModule,
+    SyncModule,
+    StatsModule,
+    RestaurantModule,
+  ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],

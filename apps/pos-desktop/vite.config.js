@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   base: './', // Electron uchun muhim
   server: {
-    port: 5173,
+    port: 5174,
     strictPort: true,
     host: true, // <-- BU QATORNI QO'SHING
   },

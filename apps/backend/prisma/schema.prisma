@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String     @default("SUPER_ADMIN") // Changed from Enum to String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Restaurant {
+  id          String   @id @default(uuid())
+  name        String
+  phone       String   @unique // Login uchun
+  password    String   // Hashed password
+  address     String?
+  machineId   String?  @unique // Biriktirilgan kompyuter IDsi
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  licenses    License[]
+  syncLogs    SyncLog[]
+
+  @@map("restaurants")
+}
+
+model License {
+  id           String        @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id])
+  
+  startDate    DateTime
+  endDate      DateTime
+  status       String        @default("ACTIVE") // Changed from Enum to String
+  price        Decimal?
+  
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("licenses")
+}
+
+model SyncLog {
+  id           String     @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  
+  dataType     String     // order, product, etc.
+  dataId       String     // Original record ID
+  action       String     // CREATE, UPDATE, DELETE
+  payload      String     // Changed from Json to String
+  
+  syncedAt     DateTime   @default(now())
+  
+  @@map("sync_logs")
+}

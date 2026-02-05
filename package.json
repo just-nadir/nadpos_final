@@ -1,0 +1,27 @@
+{
+    "name": "nadpos-monorepo",
+    "version": "0.1.0",
+    "private": true,
+    "workspaces": [
+        "apps/pos-mobile",
+        "apps/backend",
+        "apps/admin-panel",
+        "apps/pos-desktop",
+        "apps/landing-page",
+        "apps/waiter-pwa"
+    ],
+    "overrides": {
+        "react": "18.3.1",
+        "react-dom": "18.3.1",
+        "react-native": "0.76.6"
+    },
+    "scripts": {
+        "install:all": "npm install",
+        "dev:pos": "npm run dev --workspace=apps/pos-desktop",
+        "build:pos": "npm run build --workspace=apps/pos-desktop"
+    },
+    "dependencies": {
+        "@prisma/client": "^7.3.0",
+        "prisma": "^7.3.0"
+    }
+}

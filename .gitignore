@@ -1,0 +1,122 @@
+# Logs
+# Logs
+_archive/
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript v1 declaration files
+typings/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# next.js build output
+.next
+out
+
+# nuxt.js build output
+.nuxt
+
+# Gatsby files
+.cache/
+# Comment in the public line if your project uses Gatsby and you want to gatsby build to be ignored
+# public
+
+# vue-cli build objects
+dist/
+dist-ssr/
+*.local
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores-specific files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local Runtime Files
+pos.db
+pos.db-journal
+pos.db-wal
+pos.db-shm
+*.hid
+*.license
+license.json
+request.json
+access_key.txt
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+# Build artifacts
+release/
+build/
+out/
+.builder-cache/
+winCodeSign/
+*.7z
+

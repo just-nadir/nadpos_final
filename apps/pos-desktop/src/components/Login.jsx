@@ -48,11 +48,13 @@ const Login = () => {
                 login(userData, res.data.access_token);
                 // Restoran ID va token ni mahalliy sozlamalarga yozish (sync va litsenziya uchun)
                 if (window.electron?.ipcRenderer && userData?.id) {
+                    const baseUrl = (API_URL || '').replace(/\/$/, '');
                     window.electron.ipcRenderer.invoke('get-settings').then((current) => {
                         return window.electron.ipcRenderer.invoke('save-settings', {
                             ...current,
                             restaurant_id: userData.id,
-                            auth_token: res.data.access_token
+                            auth_token: res.data.access_token,
+                            backend_url: baseUrl
                         });
                     }).catch((e) => console.warn('Restaurant ID saqlash:', e));
                 }
@@ -60,11 +62,15 @@ const Login = () => {
 
         } catch (err) {
             console.error("Login Error:", err);
-            // 2. Offline Login Logic (Agar internet bo'lmasa)
-            // Hozircha faqat local storage check qilamiz, aslida offline token validatsiyasi bo'lishi kerak.
-            // User avval bir marta kirgan bo'lishi kerak.
-
-            setError(err.response?.data?.message || "Serverga ulanib bo'lmadi yoki parol xato!");
+            const isNetwork = err.code === 'ERR_NETWORK' || !err.response;
+            const backendMsg = err.response?.data?.message;
+            if (isNetwork) {
+                setError("Serverga ulanib bo'lmadi. Backend (NestJS) ishlayotganini va manzilni tekshiring.");
+            } else if (backendMsg) {
+                setError(backendMsg);
+            } else {
+                setError("Parol xato yoki hisob topilmadi.");
+            }
         } finally {
             setLoading(false);
         }

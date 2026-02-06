@@ -3,7 +3,12 @@ const axios = require('axios');
 const log = require('electron-log');
 const { db } = require('../database.cjs');
 
-const SYNC_URL = process.env.BACKEND_URL ? `${process.env.BACKEND_URL.replace(/\/$/, '')}/sync/push` : 'http://localhost:3000/sync/push';
+/** Backend manzili: avval login da saqlangan, keyin .env, keyin localhost (VPS da build qilinganda login dan keladi) */
+function getSyncUrl() {
+    const fromSettings = db.prepare("SELECT value FROM settings WHERE key = 'backend_url'").get();
+    const base = (fromSettings?.value || process.env.BACKEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+    return `${base}/sync/push`;
+}
 const CHECK_INTERVAL = 60000; // 1 minute
 
 let isSyncing = false;
@@ -72,7 +77,7 @@ async function processSyncQueue() {
         // For now, let's just log sending. Implementation of Token storage in Electron is needed.
         // Assuming we pass "x-machine-id" header and Backend validates it.
 
-        await axios.post(SYNC_URL, payload, {
+        await axios.post(getSyncUrl(), payload, {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`

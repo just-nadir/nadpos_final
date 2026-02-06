@@ -268,12 +268,36 @@ Agar 502 yoki "Connection refused" chiqsa: `pm2 status`, `pm2 logs nadpos-api` v
 
 ---
 
-## 10. POS Desktop va Backend manzili
+## 10. POS Desktop — VPS backend, Windows PC larga o‘rnatish
 
-Restoranlar POS dasturida **Backend** sifatida `https://nadpos.uz/api` ni ko‘rsatishi kerak. POS sozlamalarida yoki `.env` da:
+**Stsenariy:** Backend VPS da (masalan **nadpos.uz**), POS desktop esa restoranlardagi **Windows** kompyuterlariga o‘rnatiladi. Login va sinxronizatsiya VPS dagi backend ga borishi kerak.
 
-```env
-BACKEND_URL=https://nadpos.uz/api
+### 10.1 VPS da POS desktop ni build qilish
+
+Build **VPS da** (yoki backend manzilini biladigan mashinada) qiling va `VITE_API_URL` ni VPS API manziliga qo‘ying:
+
+```bash
+cd /var/www/nadpos
+
+# Domen orqali (HTTPS tavsiya etiladi)
+VITE_API_URL=https://nadpos.uz/api npm run build --workspace=apps/pos-desktop
+
+# Windows installer (.exe) chiqarish
+cd apps/pos-desktop
+VITE_API_URL=https://nadpos.uz/api npm run dist:win
 ```
 
-Sinxronizatsiya va login so‘rovlari shu manzilga ketadi.
+Chiqish: `apps/pos-desktop/release/NadPOS-Restoran-Setup-2.x.x.exe` (versiya package.json da).
+
+### 10.2 Windows PC larga tarqatish
+
+1. **NadPOS-Restoran-Setup-*.exe** ni VPS dan yuklab oling (yoki GitHub Release / file server orqali).
+2. Har bir restoranning Windows kompyuterida setup ni ishga tushiring va o‘rnating.
+3. Dasturni oching, **telefon** va **parol**ni (super-admin dan yaratilgan restoran hisobi) kiriting va **Kirish** bosing.
+4. Birinchi muvaffaqiyatli login dan keyin backend manzili avtomatik saqlanadi — sinxronizatsiya ham shu VPS ga boradi.
+
+**Muhim:** Build qilishda `VITE_API_URL` **mutlaqo** VPS ning ochiq API manziliga qo‘yilishi kerak (masalan `https://nadpos.uz/api`). Aks holda dastur `localhost:3000` ga so‘rov yuboradi va Windows PC da backend ishlamagani uchun login ishlamaydi.
+
+### 10.3 (Ixtiyoriy) Backend manzilini qo‘lda o‘rnatish
+
+Agar ilova allaqachon o‘rnatilgan bo‘lsa va backend manzili o‘zgargan bo‘lsa, yangi build qilib, qayta o‘rnatish kerak. Hozircha POS sozlamalarida backend URL ni qo‘lda o‘zgartirish imkoni yo‘q — faqat qayta login qilganda yangi URL saqlanadi (agar build boshqa URL bilan qilingan bo‘lsa).

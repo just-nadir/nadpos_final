@@ -7,6 +7,7 @@ import {
   Phone,
   Store,
   CheckCircle,
+  Trash2,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Restaurant } from '../../types/api';

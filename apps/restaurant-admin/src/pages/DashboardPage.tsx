@@ -58,12 +58,15 @@ export default function DashboardPage() {
         return () => { cancelled = true; };
     }, []);
 
+    type SaleItem = { total_amount?: number };
+    type TrendItem = { day?: string; total?: number };
+
     const stats = useMemo(() => {
         try {
-            const arrToday = ensureArray(todaySales);
-            const arrMonth = ensureArray(monthSales);
-            const todayRevenue = arrToday.reduce((s, x) => s + (Number(x?.total_amount) || 0), 0);
-            const monthRevenue = arrMonth.reduce((s, x) => s + (Number(x?.total_amount) || 0), 0);
+            const arrToday = ensureArray<SaleItem>(todaySales);
+            const arrMonth = ensureArray<SaleItem>(monthSales);
+            const todayRevenue = arrToday.reduce((s: number, x) => s + (Number(x?.total_amount) || 0), 0);
+            const monthRevenue = arrMonth.reduce((s: number, x) => s + (Number(x?.total_amount) || 0), 0);
             const todayOrders = arrToday.length;
             const avgCheck = todayOrders > 0 ? Math.round(todayRevenue / todayOrders) : 0;
             return { todaySales: todayRevenue, todayOrders, monthSales: monthRevenue, avgCheck };
@@ -73,8 +76,8 @@ export default function DashboardPage() {
     }, [todaySales, monthSales]);
 
     const chartData = useMemo(() => {
-        const arr = ensureArray(trendData);
-        return arr.map(({ day, total }) => ({
+        const arr = ensureArray<TrendItem>(trendData);
+        return arr.map(({ day, total }: TrendItem) => ({
             name: formatDateShort(day),
             sales: formatInt(total),
         }));
@@ -82,7 +85,7 @@ export default function DashboardPage() {
 
     const topProducts = useMemo(() => {
         const map = new Map<string, { qty: number; revenue: number }>();
-        const arr = ensureArray(todaySales);
+        const arr = ensureArray<{ items_json?: string }>(todaySales);
         arr.forEach((sale) => {
             try {
                 const raw = sale?.items_json;

@@ -252,7 +252,7 @@ export default function RestaurantsPage() {
                                                 <div className="p-2 bg-gray-50 rounded-lg text-gray-400">
                                                     <MapPin className="h-4 w-4" />
                                                 </div>
-                                                <span className="truncate max-w-[200px] font-medium" title={res.address}>{res.address || 'Kiritilmagan'}</span>
+                                                <span className="truncate max-w-[200px] font-medium" title={res.address ?? undefined}>{res.address || 'Kiritilmagan'}</span>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">

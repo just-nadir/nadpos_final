@@ -18,8 +18,10 @@ export function ContactModal({ isOpen, onClose }) {
                 phone: formData.get('phone')
             };
 
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-            const response = await fetch(`${apiUrl}/api/contact`, {
+            // Production: same origin (nadpos.uz). Dev: VITE_API_URL yoki localhost
+            const apiUrl = import.meta.env.VITE_API_URL ?? (typeof window !== 'undefined' ? window.location.origin : '');
+            const base = apiUrl ? `${apiUrl.replace(/\/$/, '')}` : '';
+            const response = await fetch(`${base}/api/contact`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -27,15 +29,19 @@ export function ContactModal({ isOpen, onClose }) {
                 body: JSON.stringify(data)
             });
 
-            if (response.ok) {
+            const result = await response.json().catch(() => ({}));
+            if (response.ok && result.ok) {
                 setFormState('success');
+            } else if (response.ok && !result.ok) {
+                alert("So'rov qabul qilindi, lekin xabar yuborilmadi. Iltimos keyinroq qayta urinib ko'ring yoki Telegram/telefon orqali bog'laning.");
+                setFormState('idle');
             } else {
                 alert("Xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
                 setFormState('idle');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert("Internet bilan aloqa yo'q yoki server ishlamayapti.");
+            alert("So'rov yuborib bo'lmadi. Internet aloqangizni tekshiring yoki keyinroq qayta urinib ko'ring.");
             setFormState('idle');
         }
     };

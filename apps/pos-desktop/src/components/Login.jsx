@@ -86,6 +86,7 @@ const Login = () => {
                     <h1 className="text-2xl font-bold text-gray-800">Tizimga kirish</h1>
                     <p className="text-gray-500 text-sm">Restoran hisobiga kiring</p>
                     {machineId && <p className="text-xs text-gray-400 mt-2 font-mono">ID: {machineId}</p>}
+                    <p className="text-xs text-gray-400 mt-1 font-mono truncate px-2" title={API_URL}>Server: {API_URL || '—'}</p>
                 </div>
 
                 {error && (

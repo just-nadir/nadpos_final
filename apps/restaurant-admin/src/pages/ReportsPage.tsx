@@ -31,11 +31,43 @@ import { statsApi, getToday } from '../services/stats.service';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
+const UZ_TZ = 'Asia/Tashkent';
+
 function formatDate(s: string) {
-    return new Date(s).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return new Date(s).toLocaleDateString('uz-UZ', { timeZone: UZ_TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 function formatTime(s: string) {
-    return new Date(s).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+    return new Date(s).toLocaleTimeString('uz-UZ', { timeZone: UZ_TZ, hour: '2-digit', minute: '2-digit' });
+}
+/** Sana/vaqtni O'zbekiston soatiga qarab soat (0–23) qaytaradi */
+function getHourUz(dateStr: string): number {
+    const h = new Date(dateStr).toLocaleString('en-US', { timeZone: UZ_TZ, hour: '2-digit', hour12: false });
+    return parseInt(h, 10) || 0;
+}
+
+const PAYMENT_LABELS: Record<string, string> = { cash: 'Naqd', card: 'Karta', debt: 'Nasiya', transfer: "O'tkazma", click: 'Click/Payme', split: "Bo'lingan", "bo'lingan": "Bo'lingan" };
+/** items_json dan paymentDetails yoki payment_details (snake_case) ni olish */
+function getPaymentDetailsFromItemsJson(items_json?: string | null): Array<{ method?: string; amount?: number }> | null {
+    if (!items_json || typeof items_json !== 'string') return null;
+    try {
+        const parsed = JSON.parse(items_json);
+        if (!parsed || typeof parsed !== 'object') return null;
+        const details = parsed.paymentDetails ?? parsed.payment_details;
+        if (Array.isArray(details) && details.length > 0) return details;
+    } catch { /* ignore */ }
+    return null;
+}
+function formatPaymentMethod(payment_method?: string | null, items_json?: string | null): string {
+    if (!payment_method) return '—';
+    const key = payment_method.toLowerCase();
+    if (key === 'split' && items_json) {
+        const details = getPaymentDetailsFromItemsJson(items_json);
+        if (details && details.length > 0) {
+            return details.map((d: { method?: string }) => PAYMENT_LABELS[(d.method || '').toLowerCase()] || d.method).join(', ');
+        }
+        return "Bo'lingan";
+    }
+    return PAYMENT_LABELS[key] || payment_method;
 }
 
 type Sale = {
@@ -90,18 +122,24 @@ export default function ReportsPage() {
     const loadData = async () => {
         setLoading(true);
         try {
+            const start = dateRange.startDate;
+            const end = dateRange.endDate;
             const [salesRes, trendRes, shiftsRes, cancelledRes] = await Promise.all([
-                statsApi.getSales(dateRange.startDate, dateRange.endDate),
-                statsApi.getTrend(dateRange.startDate, dateRange.endDate),
-                statsApi.getShifts(dateRange.startDate, dateRange.endDate),
-                statsApi.getCancelled(dateRange.startDate, dateRange.endDate),
+                statsApi.getSales(start, end),
+                statsApi.getTrend(start, end),
+                statsApi.getShifts(start, end),
+                statsApi.getCancelled(start, end),
             ]);
-            setSalesData(salesRes.data || []);
+            const sales = salesRes.data || [];
+            setSalesData(sales);
             setTrendData(trendRes.data || []);
             setShiftsData(shiftsRes.data || []);
             setCancelledData(cancelledRes.data || []);
+            if (sales.length === 0 && (start || end)) {
+                console.warn('[Hisobotlar] Savdolar bo\'sh', { start, end, salesCount: sales.length });
+            }
         } catch (e) {
-            console.error(e);
+            console.error('[Hisobotlar] loadData xato:', e);
         } finally {
             setLoading(false);
         }
@@ -134,15 +172,33 @@ export default function ReportsPage() {
         salesData.forEach((sale) => {
             const amount = sale.total_amount || 0;
             totalRevenue += amount;
-            const method = sale.payment_method || 'naqd';
-            methodMap[method] = (methodMap[method] || 0) + amount;
+            const method = (sale.payment_method || 'naqd').toLowerCase();
+            if (method === 'split') {
+                const details = getPaymentDetailsFromItemsJson(sale.items_json);
+                if (details && details.length > 0) {
+                    details.forEach((d: { method?: string; amount?: number }) => {
+                        const m = (d.method || 'boshqa').toLowerCase();
+                        methodMap[m] = (methodMap[m] || 0) + (d.amount || 0);
+                    });
+                } else {
+                    // Debug: eski format yoki paymentDetails yo'q
+                    console.warn('Split payment without paymentDetails:', { 
+                        id: sale.id, 
+                        items_json: sale.items_json?.substring(0, 100),
+                        payment_method: sale.payment_method 
+                    });
+                    methodMap['bo\'lingan'] = (methodMap['bo\'lingan'] || 0) + amount;
+                }
+            } else {
+                methodMap[method] = (methodMap[method] || 0) + amount;
+            }
 
             const waiter = sale.waiter_name || "Noma'lum";
             if (!waiterMap[waiter]) waiterMap[waiter] = { name: waiter, revenue: 0, count: 0, service: 0 };
             waiterMap[waiter].revenue += amount;
             waiterMap[waiter].count += 1;
 
-            const hour = new Date(sale.date).getHours();
+            const hour = getHourUz(sale.date);
             if (hourlyMap[hour]) {
                 hourlyMap[hour].amount += amount;
                 hourlyMap[hour].count += 1;
@@ -161,8 +217,13 @@ export default function ReportsPage() {
             } catch (_) { }
         });
 
+        const paymentLabel = (name: string) => {
+            const k = name.toLowerCase();
+            if (PAYMENT_LABELS[k]) return PAYMENT_LABELS[k];
+            return name;
+        };
         const paymentMethods = Object.entries(methodMap).map(([name, value]) => ({
-            name: name === 'cash' ? 'Naqd' : name === 'card' ? 'Karta' : name === 'debt' ? 'Nasiya' : name,
+            name: paymentLabel(name),
             value,
         }));
         const waiters = Object.values(waiterMap).sort((a, b) => b.revenue - a.revenue);
@@ -432,7 +493,7 @@ export default function ReportsPage() {
                                             <td className="px-6 py-4 text-sm">{formatTime(s.date)} {formatDate(s.date)}</td>
                                             <td className="px-6 py-4 text-slate-600">{s.table_name ?? '-'}</td>
                                             <td className="px-6 py-4 font-medium text-slate-800">{s.waiter_name ?? 'Kassir'}</td>
-                                            <td className="px-6 py-4 text-slate-600">{s.payment_method === 'cash' ? 'Naqd' : s.payment_method === 'card' ? 'Karta' : s.payment_method ?? '-'}</td>
+                                            <td className="px-6 py-4 text-slate-600">{formatPaymentMethod(s.payment_method, s.items_json)}</td>
                                             <td className="px-6 py-4 text-right font-semibold text-slate-800">{s.total_amount?.toLocaleString()}</td>
                                         </tr>
                                     ))

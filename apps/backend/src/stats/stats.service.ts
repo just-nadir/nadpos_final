@@ -105,33 +105,75 @@ export class StatsService {
         return cumulativeData;
     }
 
+    /** Sana parametrini YYYY-MM-DD ga normalizatsiya (DD/MM/YYYY yoki boshqa formatdan) */
+    private normalizeDateParam(d: string): string {
+        if (!d || typeof d !== 'string') return new Date().toISOString().slice(0, 10);
+        const trimmed = d.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+        const parts = trimmed.split(/[/.-]/);
+        if (parts.length === 3 && parts[0].length <= 2 && parts[1].length <= 2) {
+            const [a, b, c] = parts.map((x) => x.padStart(2, '0'));
+            if (Number(a) > 12) return `${c}-${b}-${a}`;
+            return `${c}-${b}-${a}`;
+        }
+        return new Date(trimmed).toISOString().slice(0, 10);
+    }
+
+    /** O'zbekiston (Toshkent UTC+5) bo'yicha YYYY-MM-DD dan UTC Date oralig'i 
+     * Masalan: "2026-02-07" → 2026-02-06 19:00 UTC dan 2026-02-07 18:59:59.999 UTC gacha */
+    private dateRangeTashkent(startDate: string, endDate: string): { start: Date; end: Date } {
+        const startNorm = this.normalizeDateParam(startDate);
+        const endNorm = this.normalizeDateParam(endDate);
+        const TZ_OFFSET_MS = 5 * 60 * 60 * 1000;
+
+        // UTC da kun boshiga 5 soat ayiramiz → Toshkent kun boshi
+        const startUtc = new Date(new Date(startNorm + 'T00:00:00.000Z').getTime() - TZ_OFFSET_MS);
+        const endUtc = new Date(new Date(endNorm + 'T23:59:59.999Z').getTime() - TZ_OFFSET_MS);
+
+        return { start: startUtc, end: endUtc };
+    }
+
     // --- Restaurant-scoped stats (mirror tables) ---
     async getRestaurantSales(restaurantId: string, startDate: string, endDate: string) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        return this.prisma.sale.findMany({
+        const { start, end } = this.dateRangeTashkent(startDate, endDate);
+        const sales = await this.prisma.sale.findMany({
             where: {
                 restaurantId,
                 date: { gte: start, lte: end },
             },
             orderBy: { date: 'desc' },
+            select: {
+                id: true, date: true, total_amount: true, subtotal: true, discount: true,
+                payment_method: true, waiter_name: true, guest_count: true, items_json: true,
+                check_number: true, table_name: true,
+            },
         });
+        // Debug: hisobot sababini topish uchun (keyin o'chirish mumkin)
+        if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_STATS === '1') {
+            console.log('[Stats] getRestaurantSales', {
+                restaurantId,
+                startDate,
+                endDate,
+                rangeStart: start.toISOString(),
+                rangeEnd: end.toISOString(),
+                count: sales.length,
+                firstSaleDate: sales[0]?.date?.toISOString?.(),
+            });
+        }
+        return sales;
     }
 
     async getRestaurantTrend(restaurantId: string, startDate: string, endDate: string) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+        const { start, end } = this.dateRangeTashkent(startDate, endDate);
         const sales = await this.prisma.sale.findMany({
             where: { restaurantId, date: { gte: start, lte: end } },
             select: { date: true, total_amount: true },
         });
+        const TZ_OFFSET_MS = 5 * 60 * 60 * 1000;
         const byDay = new Map<string, number>();
         for (const s of sales) {
-            const day = s.date.toISOString().slice(0, 10);
+            const dayUtc = new Date(s.date.getTime() + TZ_OFFSET_MS);
+            const day = dayUtc.toISOString().slice(0, 10);
             byDay.set(day, (byDay.get(day) ?? 0) + s.total_amount);
         }
         return Array.from(byDay.entries())
@@ -140,10 +182,7 @@ export class StatsService {
     }
 
     async getRestaurantShifts(restaurantId: string, startDate: string, endDate: string) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+        const { start, end } = this.dateRangeTashkent(startDate, endDate);
         return this.prisma.shift.findMany({
             where: {
                 restaurantId,
@@ -161,10 +200,7 @@ export class StatsService {
     }
 
     async getRestaurantCancelled(restaurantId: string, startDate: string, endDate: string) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+        const { start, end } = this.dateRangeTashkent(startDate, endDate);
         return this.prisma.cancelledOrder.findMany({
             where: {
                 restaurantId,

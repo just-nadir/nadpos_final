@@ -15,7 +15,7 @@ export default function DashboardLayout() {
     };
 
     const navItems = [
-        { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { path: '/dashboard', label: 'Asosiy', icon: LayoutDashboard },
         { path: '/dashboard/reports', label: 'Hisobotlar', icon: BarChart3 },
     ];
 
@@ -27,7 +27,7 @@ export default function DashboardLayout() {
                     <h1 className="text-xl font-bold text-slate-800">
                         {user?.name || "Restoran Admin"}
                     </h1>
-                    <p className="text-xs text-slate-500 mt-1">Admin Panel</p>
+                    <p className="text-xs text-slate-500 mt-1">Boshqaruv paneli</p>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-1">

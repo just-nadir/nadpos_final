@@ -16,12 +16,18 @@ export function formatInt(val: unknown): number {
     return Math.floor(n);
 }
 
+/** Hafta kunlari qisqartmasi o'zbekcha */
+const UZ_WEEKDAY_SHORT: Record<number, string> = {
+    0: 'Yak', 1: 'Dush', 2: 'Sesh', 3: 'Chor', 4: 'Pay', 5: 'Jum', 6: 'Shan',
+};
+
 export function formatDateShort(val: unknown): string {
     if (val == null || val === '') return '';
     try {
-        const d = typeof val === 'string' || typeof val === 'number' ? new Date(val) : null;
+        const d = typeof val === 'string' || typeof val === 'number' ? new Date(val + (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val) ? 'T12:00:00Z' : '')) : null;
         if (!d || Number.isNaN(d.getTime())) return '';
-        return d.toLocaleDateString('uz-UZ', { weekday: 'short' });
+        const dayIndex = d.getUTCDay();
+        return UZ_WEEKDAY_SHORT[dayIndex] ?? '';
     } catch {
         return '';
     }

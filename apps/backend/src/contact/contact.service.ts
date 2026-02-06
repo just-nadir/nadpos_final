@@ -24,7 +24,7 @@ export class ContactService {
         ].join('\n');
         const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 25000);
+        const timeout = setTimeout(() => controller.abort(), 10000);
         try {
             const res = await fetch(url, {
                 method: 'POST',
@@ -38,14 +38,14 @@ export class ContactService {
             clearTimeout(timeout);
             const data = (await res.json()) as { ok?: boolean; description?: string };
             if (!data.ok) {
-                console.error('Telegram API xato:', data.description ?? data);
+                console.warn('ContactService: Telegram API javobi xato:', data.description ?? data);
                 return false;
             }
             return true;
         } catch (e) {
             clearTimeout(timeout);
             const err = e as Error & { cause?: { code?: string } };
-            console.error('Telegram xabar yuborish xatosi:', err.message, err.cause?.code ?? '');
+            console.warn('ContactService: Telegram ga ulanish muvaffaqiyatsiz (tarmoq/firewall). Xabar saqlanmadi.', err.cause?.code ?? err.message);
             return false;
         }
     }

@@ -118,7 +118,7 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">Dashboard</h2>
+                <h2 className="text-2xl font-bold text-slate-800 mb-6">Asosiy</h2>
                 <div className="flex items-center justify-center py-20 text-slate-500">Yuklanmoqda...</div>
             </div>
         );
@@ -126,7 +126,7 @@ export default function DashboardPage() {
 
     return (
         <div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Dashboard</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">Asosiy</h2>
             {error && (
                 <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
                     {error}
@@ -165,7 +165,7 @@ export default function DashboardPage() {
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
                                     <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                    <Area type="monotone" dataKey="sales" stroke="#0ea5e9" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+                                    <Area type="monotone" dataKey="sales" name="Savdo" stroke="#0ea5e9" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         )}

@@ -1,7 +1,10 @@
 import api from './api';
 
-function dateStr(d: Date) {
-    return d.toISOString().slice(0, 10);
+const UZBEKISTAN_TZ = 'Asia/Tashkent';
+
+/** Bugungi sana O'zbekiston (Toshkent) vaqtida YYYY-MM-DD */
+export function getTodayUz(): string {
+    return new Date().toLocaleDateString('en-CA', { timeZone: UZBEKISTAN_TZ });
 }
 
 export const statsApi = {
@@ -54,19 +57,20 @@ export const statsApi = {
 };
 
 export function getToday() {
-    const t = new Date();
-    return dateStr(t);
+    return getTodayUz();
 }
 
 export function getMonthStartEnd() {
-    const t = new Date();
-    const start = new Date(t.getFullYear(), t.getMonth(), 1);
-    return { startDate: dateStr(start), endDate: dateStr(t) };
+    const today = getTodayUz();
+    const [y, m] = today.split('-').map(Number);
+    const startDate = `${y}-${String(m).padStart(2, '0')}-01`;
+    return { startDate, endDate: today };
 }
 
 export function getLast7Days() {
-    const end = new Date();
-    const start = new Date(end);
-    start.setDate(start.getDate() - 6);
-    return { startDate: dateStr(start), endDate: dateStr(end) };
+    const endDate = getTodayUz();
+    const [y, m, d] = endDate.split('-').map(Number);
+    const startD = new Date(y, m - 1, d - 6);
+    const startDate = startD.getFullYear() + '-' + String(startD.getMonth() + 1).padStart(2, '0') + '-' + String(startD.getDate()).padStart(2, '0');
+    return { startDate, endDate };
 }

@@ -20,8 +20,9 @@ export class StatsController {
     async getRestaurantSales(@Query('startDate') startDate: string, @Query('endDate') endDate: string, @Req() req: any) {
         const user = (req as any).user;
         if (user?.role !== 'RESTAURANT' || !user?.id) throw new ForbiddenException('Restaurant only');
-        const start = startDate || new Date().toISOString().slice(0, 10);
-        const end = endDate || new Date().toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10);
+        const start = (startDate && String(startDate).trim()) || today;
+        const end = (endDate && String(endDate).trim()) || today;
         return this.statsService.getRestaurantSales(user.id, start, end);
     }
 
@@ -30,8 +31,9 @@ export class StatsController {
     async getRestaurantTrend(@Query('startDate') startDate: string, @Query('endDate') endDate: string, @Req() req: any) {
         const user = (req as any).user;
         if (user?.role !== 'RESTAURANT' || !user?.id) throw new ForbiddenException('Restaurant only');
-        const start = startDate || new Date().toISOString().slice(0, 10);
-        const end = endDate || new Date().toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10);
+        const start = (startDate && String(startDate).trim()) || today;
+        const end = (endDate && String(endDate).trim()) || today;
         return this.statsService.getRestaurantTrend(user.id, start, end);
     }
 
@@ -40,8 +42,9 @@ export class StatsController {
     async getRestaurantShifts(@Query('startDate') startDate: string, @Query('endDate') endDate: string, @Req() req: any) {
         const user = (req as any).user;
         if (user?.role !== 'RESTAURANT' || !user?.id) throw new ForbiddenException('Restaurant only');
-        const start = startDate || new Date().toISOString().slice(0, 10);
-        const end = endDate || new Date().toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10);
+        const start = (startDate && String(startDate).trim()) || today;
+        const end = (endDate && String(endDate).trim()) || today;
         return this.statsService.getRestaurantShifts(user.id, start, end);
     }
 
@@ -58,8 +61,9 @@ export class StatsController {
     async getRestaurantCancelled(@Query('startDate') startDate: string, @Query('endDate') endDate: string, @Req() req: any) {
         const user = (req as any).user;
         if (user?.role !== 'RESTAURANT' || !user?.id) throw new ForbiddenException('Restaurant only');
-        const start = startDate || new Date().toISOString().slice(0, 10);
-        const end = endDate || new Date().toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10);
+        const start = (startDate && String(startDate).trim()) || today;
+        const end = (endDate && String(endDate).trim()) || today;
         return this.statsService.getRestaurantCancelled(user.id, start, end);
     }
 }

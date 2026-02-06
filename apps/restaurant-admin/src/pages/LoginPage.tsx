@@ -18,7 +18,7 @@ export default function LoginPage() {
 
         try {
             await login(phone, password);
-            navigate('/');
+            navigate('/dashboard');
         } catch (err: unknown) {
             const e = err as { response?: { data?: { message?: string } }; code?: string };
             if (e?.code === 'ERR_NETWORK' || !e?.response) {

@@ -7,18 +7,17 @@ import ReportsPage from './pages/ReportsPage.tsx';
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('token');
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
   return <>{children}</>;
 }
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/login">
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-
-        <Route path="/" element={
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/dashboard" element={
           <ProtectedRoute>
             <DashboardLayout />
           </ProtectedRoute>

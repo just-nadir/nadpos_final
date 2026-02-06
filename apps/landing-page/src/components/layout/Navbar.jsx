@@ -40,7 +40,7 @@ export function Navbar({ onContactClick }) {
 
                 {/* CTA */}
                 <div className="hidden md:flex items-center gap-4">
-                    <Button variant="ghost" size="sm" className="hover:scale-105 hover:bg-white/10 transition-all duration-300" onClick={() => window.location.href = import.meta.env.VITE_ADMIN_URL || 'http://localhost:5173/admin/'}>Kirish</Button>
+                    <Button variant="ghost" size="sm" className="hover:scale-105 hover:bg-white/10 transition-all duration-300" onClick={() => window.location.href = '/login'}>Kirish</Button>
                     <Button className="hover:scale-105 transition-transform duration-300 shadow-lg shadow-primary/25 hover:shadow-primary/40" onClick={onContactClick}>Bog'lanish</Button>
                 </div>
 
@@ -57,7 +57,7 @@ export function Navbar({ onContactClick }) {
                     <a href="#how-it-works" className="text-base font-medium text-gray-300 hover:text-white py-2" onClick={() => setIsMobileMenuOpen(false)}>Afzalliklar</a>
                     <a href="#pricing" className="text-base font-medium text-gray-300 hover:text-white py-2" onClick={() => setIsMobileMenuOpen(false)}>Tariflar</a>
                     <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-white/10">
-                        <Button variant="ghost" className="w-full justify-start">Kirish</Button>
+                        <Button variant="ghost" className="w-full justify-start" onClick={() => { window.location.href = '/login'; setIsMobileMenuOpen(false); }}>Kirish</Button>
                         <Button className="w-full" onClick={onContactClick}>Bog'lanish</Button>
                     </div>
                 </div>

@@ -18,7 +18,7 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/superadmin">
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 

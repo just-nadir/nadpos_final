@@ -11,12 +11,12 @@ export default function DashboardLayout() {
 
     const handleLogout = () => {
         logout();
-        navigate('/login');
+        navigate('/');
     };
 
     const navItems = [
-        { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-        { path: '/reports', label: 'Hisobotlar', icon: BarChart3 },
+        { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { path: '/dashboard/reports', label: 'Hisobotlar', icon: BarChart3 },
     ];
 
     return (

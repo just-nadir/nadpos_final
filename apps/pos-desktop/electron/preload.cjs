@@ -1,5 +1,4 @@
 const { contextBridge, ipcRenderer } = require('electron');
-const log = require('electron-log');
 
 contextBridge.exposeInMainWorld('electron', {
   ipcRenderer: {
@@ -22,16 +21,10 @@ contextBridge.exposeInMainWorld('electron', {
   }
 });
 
-// YANGI: Frontend Logging API
+// Frontend loglari main process orqali nadpos.log ga yoziladi
 contextBridge.exposeInMainWorld('api', {
-  log: (level, message) => {
-    log[level](message);
-  },
-  logError: (error, stack) => {
-    log.error('Frontend Error:', error);
-    if (stack) {
-      log.error('Stack:', stack);
-    }
+  logFromRenderer: (payload) => {
+    ipcRenderer.invoke('log-from-renderer', payload).catch(() => {});
   },
   // Auto Updater API
   onUpdateAvailable: (callback) => ipcRenderer.on('update-available', (event, ...args) => callback(...args)),

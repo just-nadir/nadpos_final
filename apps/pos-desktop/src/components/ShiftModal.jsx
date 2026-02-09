@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Lock, Unlock, DollarSign, X } from 'lucide-react';
 import { useGlobal } from '../context/GlobalContext';
+import { appLog } from '../utils/appLog';
 
 // Smenani ochish/yopish modali
 const ShiftModal = ({ mode, onClose }) => {
@@ -39,7 +40,7 @@ const ShiftModal = ({ mode, onClose }) => {
             await checkShift(); // Global state yangilash
             onClose();
         } catch (err) {
-            console.error(err);
+            appLog.error('ShiftModal', err.message || 'Smena amali xatosi', err);
             // Electron IPC error prefixini olib tashlash
             const message = err.message.replace(/Error invoking remote method '.*?': Error: /, '').replace('Error: ', '');
             showToast('error', message);

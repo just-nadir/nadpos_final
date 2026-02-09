@@ -1,7 +1,6 @@
 const { db, notify, addToSyncQueue } = require('../database.cjs');
 const { triggerSyncNow } = require('../services/syncService.cjs');
-const log = require('electron-log');
-// const telegramController = require('./telegramController.cjs');
+const { logger } = require('../logger.cjs');
 const crypto = require('crypto');
 
 module.exports = {
@@ -24,11 +23,11 @@ module.exports = {
             const stmt = db.prepare("INSERT INTO shifts (id, start_time, start_cash, status, cashier_name, shift_number) VALUES (?, ?, ?, 'open', ?, ?)");
             const info = stmt.run(id, startTime, startCash || 0, cashierName, nextShiftNum);
 
-            log.info(`Smena ochildi: ID ${id}, №${nextShiftNum}, Kassir: ${cashierName}`);
+            logger.info('Smena', 'Smena ochildi', { id, shiftNumber: nextShiftNum, cashierName });
             notify('shift-status', 'open');
             return { success: true, shiftId: id };
         } catch (err) {
-            log.error("openShift xatosi:", err);
+            logger.error('Smena', 'openShift xatosi', err);
             throw err;
         }
     },
@@ -36,18 +35,18 @@ module.exports = {
     // Smenani yopish (Z-Report)
     closeShift: async ({ endCash, endCard }) => {
         try {
-            log.info("Closing shift... Params:", { endCash, endCard });
+            logger.info('Smena', 'Smena yopilmoqda', { endCash, endCard });
 
             const activeShift = db.prepare("SELECT * FROM shifts WHERE status = 'open'").get();
             if (!activeShift) {
-                log.warn("Close Shift: No active shift found");
+                logger.warn('Smena', 'Yopish: ochiq smena topilmadi');
                 throw new Error("Ochiq smena topilmadi!");
             }
 
-            // Faol stollar borligini tekshirish
-            const activeTables = db.prepare("SELECT COUNT(*) as count FROM tables WHERE status != 'free'").get();
+            // Faol stollar borligini tekshirish (faqat o'chirilmagan stollar — deleted_at IS NULL)
+            const activeTables = db.prepare("SELECT COUNT(*) as count FROM tables WHERE deleted_at IS NULL AND status != 'free'").get();
             if (activeTables.count > 0) {
-                log.warn("Close Shift: Active tables exist");
+                logger.warn('Smena', 'Yopish: kassada faol stollar mavjud');
                 throw new Error("Diqqat! Barcha stollar yopilmagan. Smenani yopishdan oldin iltimos, faol stollarni hisob-kitob qiling.");
             }
 
@@ -92,7 +91,7 @@ module.exports = {
             const expectedCard = totalCard;
             const diffCard = (endCard || 0) - expectedCard;
 
-            log.info("Shift Calc:", { totalSales, totalCash, totalCard, expectedCash, diffCash });
+            logger.info('Smena', 'Smena hisobi', { totalSales, totalCash, totalCard, expectedCash, diffCash });
 
             // Smenani yopish - Update DB (Direct execution, no transaction for now to be safe)
             db.prepare(`
@@ -116,7 +115,7 @@ module.exports = {
                 totalSales, totalCash, totalCard, totalTransfer, shiftId
             );
 
-            log.info(`Smena yopildi (DB Updated): ID ${shiftId}`);
+            logger.info('Smena', 'Smena yopildi (DB yangilandi)', { shiftId });
 
             // Sync shift to backend (for restaurant-admin reports)
             let totalDebt = 0;
@@ -157,7 +156,7 @@ module.exports = {
             // DO NOT AWAIT PRINTER TO AVOID BLOCKING UI RESPONSE
             setTimeout(async () => {
                 try {
-                    log.info("Printing Z-Report...");
+                    logger.info('Smena', 'Z-Report chop etilmoqda');
                     const printerService = require('../services/printerService.cjs');
 
                     // 1. Print Financial Z-Report
@@ -178,7 +177,7 @@ module.exports = {
                         systemTransfer: totalTransfer,
                         totalSales: totalSales
                     });
-                    log.info("Z-Report Printed Successfully");
+                    logger.info('Smena', 'Z-Report muvaffaqiyatli chop etildi');
 
                     // 2. Print Product Sales Report (YANGI)
                     const shiftProducts = db.prepare(`
@@ -195,7 +194,7 @@ module.exports = {
                     `).all(shiftId);
 
                     if (shiftProducts && shiftProducts.length > 0) {
-                        log.info(`Printing Shift Products Report... (${shiftProducts.length} items)`);
+                        logger.info('Smena', 'Smena mahsulotlari hisoboti chop etilmoqda', { count: shiftProducts.length });
 
                         // Shift object for header info
                         const shiftData = {
@@ -205,19 +204,19 @@ module.exports = {
                         };
 
                         await printerService.printShiftProducts(shiftData, shiftProducts);
-                        log.info("Shift Products Report Printed Successfully");
+                        logger.info('Smena', 'Smena mahsulotlari hisoboti chop etildi');
                     } else {
-                        log.info("No products sold in this shift, skipping product report.");
+                        logger.info('Smena', 'Smenada sotuv bo\'lmagan, mahsulot hisoboti o\'tkazib yuborildi');
                     }
 
                 } catch (printErr) {
-                    log.error("Printer Report Error (Ignored):", printErr.message);
+                    logger.error('Smena', 'Printer hisobot xatosi (e\'tiborsiz qoldirildi)', printErr);
                 }
             }, 100);
 
             return { success: true };
         } catch (err) {
-            log.error("closeShift xatosi:", err);
+            logger.error('Smena', 'closeShift xatosi', err);
             throw err;
         }
     },
@@ -287,7 +286,7 @@ module.exports = {
                 };
             });
         } catch (err) {
-            log.error("getShifts xatosi:", err);
+            logger.error('Smena', 'getShifts xatosi', err);
             throw err;
         }
     }

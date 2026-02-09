@@ -1,14 +1,11 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const { app } = require('electron');
-const log = require('electron-log');
 const crypto = require('crypto');
-
-// --- Baza manzilini aniqlash ---
+const { logger } = require('./logger.cjs');
 const { dbPath } = require('./config.cjs');
 
-console.log("📂 BAZA MANZILI (V2):", dbPath);
-
+logger.info('Baza', 'Baza manzili (V2)', dbPath);
 const db = new Database(dbPath, { verbose: null });
 db.pragma('journal_mode = WAL');
 db.pragma('synchronous = NORMAL');
@@ -367,7 +364,7 @@ function createV2Tables() {
     try {
         const nullShifts = db.prepare("SELECT COUNT(*) as count FROM shifts WHERE shift_number IS NULL").get();
         if (nullShifts.count > 0) {
-            console.log("🔄 Backfilling shift_number for existing shifts...");
+            logger.info('Baza', 'Shift raqamlarini to\'ldirish boshlandi');
             const allShifts = db.prepare("SELECT id FROM shifts ORDER BY start_time ASC").all();
             const updateStmt = db.prepare("UPDATE shifts SET shift_number = ? WHERE id = ?");
 
@@ -378,10 +375,10 @@ function createV2Tables() {
             });
 
             transaction(allShifts);
-            console.log("✅ Shift numbers backfilled.");
+            logger.info('Baza', 'Shift raqamlari to\'ldirildi');
         }
     } catch (e) {
-        console.error("Error backfilling shift numbers:", e);
+        logger.error('Baza', 'Shift raqamlari to\'ldirishda xato', e);
     }
 
     // 2.3 Bronlar (Reservations)
@@ -491,8 +488,7 @@ function createV2Tables() {
 
 // --- MIGRATION LOGIC (V1 -> V2) ---
 function migrateToV2() {
-    console.log("-----------------------------------------");
-    console.log("🚀 MIGRATION START: V1 (Integer) -> V2 (UUID)");
+    logger.info('Baza', 'Migratsiya boshlandi: V1 -> V2 (UUID)');
 
     const migTransaction = db.transaction(() => {
         const tables = [
@@ -506,7 +502,7 @@ function migrateToV2() {
         for (const table of tables) {
             const exists = db.prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = '${table}'`).get();
             if (exists) {
-                console.log(`Processing table: ${table}`);
+                logger.info('Baza', `Migratsiya jadvali: ${table}`);
                 db.prepare(`ALTER TABLE ${table} RENAME TO ${table}_old`).run();
                 db.prepare(`CREATE TABLE _map_${table}(old_id INTEGER PRIMARY KEY, new_id TEXT)`).run();
             }
@@ -544,7 +540,7 @@ function migrateToV2() {
                 for (const row of rows) {
                     insertMap.run(row.id, uuidv4());
                 }
-                console.log(`Migrated IDs for ${table}: ${rows.length} records`);
+                logger.info('Baza', `Migratsiya tugadi: ${table}`, { records: rows.length });
             });
         };
 
@@ -716,7 +712,7 @@ function migrateToV2() {
             });
         });
 
-        console.log("✅ Data Migration Completed.");
+        logger.info('Baza', 'Ma\'lumot migratsiyasi tugadi');
 
         // Clean up _map tables? (Optional, kept usually for safety)
         // db.prepare(`DROP TABLE ...`).run();
@@ -725,10 +721,9 @@ function migrateToV2() {
     try {
         migTransaction();
         db.pragma('user_version = 2');
-        console.log("🎉 MIGRATION SUCCESSFUL! DB is now V2 (UUID).");
+        logger.info('Baza', 'Migratsiya muvaffaqiyatli. Baza V2 (UUID).');
     } catch (e) {
-        console.error("❌ MIGRATION FAILED. Transactions rolled back.");
-        console.error(e);
+        logger.error('Baza', 'Migratsiya muvaffaqiyatsiz. Rollback.', e);
         throw e;
     }
 }
@@ -737,7 +732,7 @@ function migrateToV2() {
 function initDB() {
     try {
         const userVersion = db.pragma('user_version', { simple: true });
-        console.log(`ℹ️ Current DB Version: ${userVersion} `);
+        logger.info('Baza', `Joriy baza versiyasi: ${userVersion}`);
 
         if (userVersion < 2) {
             // Check if we have V1 tables (e.g., 'users' exists and has INT id?)
@@ -749,13 +744,13 @@ function initDB() {
                 // We assume if version < 2 and table exists, it is legacy V1.
                 migrateToV2();
             } else {
-                console.log("✨ Fresh Install detected. Creating V2 tables directly.");
+                logger.info('Baza', 'Yangi o\'rnatish. V2 jadvallar yaratilmoqda.');
                 createV2Tables();
                 seedDefaults();
                 db.pragma('user_version = 2');
             }
         } else {
-            console.log("✅ DB is up to date (V2). Verifying tables...");
+            logger.info('Baza', 'Baza V2 yangilandi. Jadvallar tekshirilmoqda.');
             createV2Tables(); // Idempotent check
             seedTables(); // Check and seed tables if empty
         }
@@ -767,8 +762,7 @@ function initDB() {
         runOptimize();
 
     } catch (err) {
-        log.error("InitDB Error:", err);
-        console.error(err);
+        logger.error('Baza', 'InitDB xatosi', err);
     }
 
     // --- RESTAURANT_ID ni aniqlashtirish ---
@@ -776,7 +770,7 @@ function initDB() {
         const ridSetting = db.prepare("SELECT value FROM settings WHERE key = 'restaurant_id'").get();
         if (ridSetting) {
             RESTAURANT_ID = ridSetting.value;
-            console.log("🏢 RESTAURANT_ID (Settings):", RESTAURANT_ID);
+            logger.info('Baza', 'RESTAURANT_ID (Sozlamalar)', RESTAURANT_ID);
         } else {
             // Agar settingda yo'q bo'lsa, joriy qiymatni yozib qo'yamiz (agar u default bo'lsa ham)
             // Yoki yangi generatsiya qilamiz agar env da ham yo'q bo'lsa.
@@ -785,10 +779,10 @@ function initDB() {
             }
             // Agar hali ham default bo'lsa (hardcoded), uni saqlaymiz
             db.prepare("INSERT OR IGNORE INTO settings (key, value, is_synced) VALUES ('restaurant_id', ?, 0)").run(RESTAURANT_ID);
-            console.log("🏢 RESTAURANT_ID (Saved):", RESTAURANT_ID);
+            logger.info('Baza', 'RESTAURANT_ID saqlandi', RESTAURANT_ID);
         }
     } catch (e) {
-        console.error("Failed to load RESTAURANT_ID:", e);
+        logger.error('Baza', 'RESTAURANT_ID yuklashda xato', e);
     }
 }
 
@@ -804,7 +798,7 @@ function seedDefaults() {
             VALUES(?, ?, ?, ?, ?, ?, 0, ?)`).run(
             ADMIN_ID, 'Admin', hash, 'admin', salt, RESTAURANT_ID, OLD_DATE
         );
-        console.log("✅ Default Admin created: PIN 0000");
+        logger.info('Baza', 'Default admin yaratildi: PIN 0000');
     }
 
     // Settings
@@ -819,7 +813,7 @@ function seedDefaults() {
 function seedTables() {
     const tableCount = db.prepare('SELECT count(*) as count FROM tables').get().count;
     if (tableCount === 0) {
-        console.log("⚠️ No tables found. Seeding demo tables...");
+        logger.info('Baza', 'Stollar topilmadi. Demo stollar yaratilmoqda.');
         const hallId = uuidv4();
         // Create Hall
         db.prepare("INSERT INTO halls (id, name, restaurant_id, is_synced) VALUES (?, ?, ?, 0)").run(hallId, 'Asosiy Zal', RESTAURANT_ID);
@@ -830,21 +824,21 @@ function seedTables() {
             db.prepare("INSERT INTO tables (id, hall_id, name, guests, status, restaurant_id, is_synced) VALUES (?, ?, ?, ?, 'free', ?, 0)")
                 .run(tableId, hallId, `Stol ${i}`, 4, RESTAURANT_ID);
         }
-        console.log("✅ Demo tables created: 'Asosiy Zal' with 5 tables.");
+        logger.info('Baza', "Demo stollar yaratildi: 'Asosiy Zal' 5 ta stol");
     }
 }
 
 // --- OPTIMIZATSIYA VA TOZALASH ---
 function runOptimize() {
     try {
-        console.log("🧹 Database Optimizatsiyasi boshlandi...");
+        logger.info('Baza', 'Baza optimizatsiyasi boshlandi');
 
         // Query plannerini yangilash
         db.pragma('optimize'); // SQLite auto-optimize
 
-        console.log("✅ Database Optimizatsiyasi yakunlandi.");
+        logger.info('Baza', 'Baza optimizatsiyasi tugadi');
     } catch (e) {
-        log.error("Database Optimize Error:", e);
+        logger.error('Baza', 'Baza optimizatsiyasi xatosi', e);
     }
 }
 
@@ -854,7 +848,7 @@ function addToSyncQueue(tableName, dataId, action, payload) {
         const stmt = db.prepare(`INSERT INTO sync_queue (table_name, data_id, action, data_payload, restaurant_id) VALUES (?, ?, ?, ?, ?)`);
         stmt.run(tableName, dataId, action, JSON.stringify(payload), RESTAURANT_ID);
     } catch (e) {
-        log.error(`addToSyncQueue Error (${tableName}, ${action}):`, e);
+        logger.error('Baza', `addToSyncQueue xatosi: ${tableName}, ${action}`, e);
     }
 }
 
@@ -866,7 +860,7 @@ function getRestaurantId() {
 function setRestaurantId(id) {
     if (id && typeof id === 'string') {
         RESTAURANT_ID = id;
-        console.log("🏢 RESTAURANT_ID yangilandi:", RESTAURANT_ID);
+        logger.info('Baza', 'RESTAURANT_ID yangilandi', RESTAURANT_ID);
     }
 }
 

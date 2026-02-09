@@ -1,6 +1,6 @@
 const { db, uuidv4, notify, getRestaurantId } = require('../database.cjs');
-
-const RESERVATION_DURATION_MINUTES = 120; // Default 2 soat
+const { logger } = require('../logger.cjs');
+const RESERVATION_DURATION_MINUTES = 120;
 
 const reservationsController = {
     getReservations: () => {
@@ -16,14 +16,14 @@ const reservationsController = {
             `).all();
             return rows;
         } catch (error) {
-            console.error('getReservations error:', error);
+            logger.error('Bron', 'getReservations xatosi', error);
             throw error;
         }
     },
 
     createReservation: (data) => {
         try {
-            console.log('createReservation called with:', data);
+            logger.info('Bron', 'createReservation chaqirildi', { customer_name: data.customer_name });
             const { customer_name, customer_phone, reservation_time, guests, table_id, note } = data;
 
             // 1. Vaqtga tekshiruv (O'tmishga bron qilmaslik)
@@ -50,13 +50,13 @@ const reservationsController = {
                 finalTableId = findBestAvailableTable(guests, reservation_time);
                 if (!finalTableId) {
                     // Agar stol topilmasa, stolsiz qabul qilamiz (Pending)
-                    console.warn("Avtomatik stol topilmadi, stolsiz saqlanmoqda.");
+                    logger.warn('Bron', 'Avtomatik stol topilmadi, stolsiz saqlanmoqda');
                     // throw new Error("Afsuski, mos keluvchi bo'sh stol topilmadi"); // Oldingi qattiq cheklov
                 }
             }
 
             const restaurantId = getRestaurantId();
-            console.log('Inserting reservation:', { id, customer_name, finalTableId, restaurantId });
+            logger.info('Bron', 'Bron yozilmoqda', { id, customer_name, finalTableId });
 
             db.prepare(`
                 INSERT INTO reservations (id, customer_name, customer_phone, reservation_time, guests, table_id, note, status, created_at, updated_at, restaurant_id, is_synced)
@@ -68,14 +68,14 @@ const reservationsController = {
 
             return { success: true, id, table_id: finalTableId };
         } catch (error) {
-            console.error('createReservation error:', error);
+            logger.error('Bron', 'createReservation xatosi', error);
             throw error;
         }
     },
 
     updateReservation: (data) => {
         try {
-            console.log('updateReservation called with:', data);
+            logger.info('Bron', 'updateReservation chaqirildi', { id: data.id });
             const { id, customer_name, customer_phone, reservation_time, guests, table_id, note } = data;
 
             // 1. Vaqtni tekshirish
@@ -95,7 +95,7 @@ const reservationsController = {
                 // Hozirgi mantiq bo'yicha, agar 'auto' bo'lsa, qayta qidiramiz
                 finalTableId = findBestAvailableTable(guests, reservation_time);
                 if (!finalTableId) {
-                    console.warn("Update: Avtomatik stol topilmadi, stolsiz saqlanmoqda.");
+                    logger.warn('Bron', 'Update: Avtomatik stol topilmadi');
                 }
             } else {
                 // Aniq stol tanlangan. Bandlikka tekshiramiz (O'ZIDAN TASHQARI)
@@ -113,7 +113,7 @@ const reservationsController = {
             notify('reservation-update', id);
             return { success: true, id, table_id: finalTableId };
         } catch (error) {
-            console.error('updateReservation error:', error);
+            logger.error('Bron', 'updateReservation xatosi', error);
             throw error;
         }
     },
@@ -127,7 +127,7 @@ const reservationsController = {
             notify('reservation-update', id);
             return { success: true };
         } catch (error) {
-            console.error('updateReservationStatus error:', error);
+            logger.error('Bron', 'updateReservationStatus xatosi', error);
             throw error;
         }
     },
@@ -142,7 +142,7 @@ const reservationsController = {
             notify('reservation-update', id);
             return { success: true };
         } catch (error) {
-            console.error('deleteReservation error:', error);
+            logger.error('Bron', 'deleteReservation xatosi', error);
             throw error;
         }
     }

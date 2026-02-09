@@ -9,6 +9,8 @@ import { useGlobal } from '../context/GlobalContext';
 import { cn } from '../utils/cn';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { useIpcListener } from '../hooks/useIpcListener';
+import { appLog } from '../utils/appLog';
 
 const OrderSummary = ({ table, onDeselect }) => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -33,7 +35,7 @@ const OrderSummary = ({ table, onDeselect }) => {
       const items = await ipcRenderer.invoke('get-table-items', tableId);
       setOrderItems(items);
     } catch (error) {
-      console.error(error);
+      appLog.error('OrderSummary', 'Buyurtma yuklash xatosi', error);
     } finally {
       setLoading(false);
     }
@@ -47,6 +49,13 @@ const OrderSummary = ({ table, onDeselect }) => {
       loadOrderItems(table.id);
     }
   }, [table, loadOrderItems]);
+
+  // Realtime: tanlangan stol buyurtmasi o'zgarganda (PWA yoki boshqa oyna) ro'yxat yangilansin
+  useIpcListener('db-change', (event, data) => {
+    if (!table) return;
+    if (data.type === 'table-items' && data.id === table.id) loadOrderItems(table.id);
+    if (data.type === 'tables' && (!data.id || data.id === table.id)) loadOrderItems(table.id);
+  });
 
   // Hotkeys
   useEffect(() => {
@@ -76,7 +85,7 @@ const OrderSummary = ({ table, onDeselect }) => {
         showToast('success', `Chek chop etildi: #${result.checkNumber}`);
       }
     } catch (error) {
-      console.error('HISOB chiqarishda xato:', error);
+      appLog.error('OrderSummary', 'Hisob chiqarishda xato', error);
       showToast('error', `Xato: ${error.message}`);
     } finally {
       setPrintingCheck(false);
@@ -99,7 +108,7 @@ const OrderSummary = ({ table, onDeselect }) => {
       }
       setItemToReturn(null);
     } catch (error) {
-      console.error("Return item error:", error);
+      appLog.error('OrderSummary', 'Return item xatosi', error);
       showToast('error', "Qaytarishda xatolik: " + error.message);
     }
   }, [table, showToast, loadOrderItems]);
@@ -115,7 +124,7 @@ const OrderSummary = ({ table, onDeselect }) => {
       }
       setItemToDelete(null);
     } catch (error) {
-      console.error("Remove item error:", error);
+      appLog.error('OrderSummary', 'Remove item xatosi', error);
       showToast('error', "Xatolik: " + error.message);
     }
   }, [itemToDelete, table, showToast, loadOrderItems]);
@@ -129,7 +138,7 @@ const OrderSummary = ({ table, onDeselect }) => {
         if (onDeselect) onDeselect();
       }
     } catch (error) {
-      console.error("Cancel error:", error);
+      appLog.error('OrderSummary', 'Cancel xatosi', error);
       showToast('error', "Xatolik yuz berdi: " + error.message);
     }
   }, [table, onDeselect, showToast]);
@@ -145,10 +154,9 @@ const OrderSummary = ({ table, onDeselect }) => {
   const guestsCount = table?.guests || 0;
 
   const service = useMemo(() => {
-    const svcValue = Number(settings.serviceChargeValue) || 0;
-    // Always calculate as percentage
+    const svcValue = Number(settings.serviceChargeValue ?? settings.service_charge_value) || 0;
     return (subtotal * svcValue) / 100;
-  }, [subtotal, settings.serviceChargeValue]);
+  }, [subtotal, settings.serviceChargeValue, settings.service_charge_value]);
 
   const preTotal = subtotal + service;
 
@@ -215,7 +223,7 @@ const OrderSummary = ({ table, onDeselect }) => {
       if (onDeselect) onDeselect();
 
     } catch (error) {
-      console.error(error);
+      appLog.error('OrderSummary', 'To\'lov xatosi', error);
     }
   }, [table, finalTotal, subtotal, discountAmount, selectedCustomer, orderItems, onDeselect]);
 
@@ -393,7 +401,7 @@ const OrderSummary = ({ table, onDeselect }) => {
             </div>
 
             <div className="flex justify-between text-base font-medium text-muted-foreground">
-              <span>Xizmat ({settings.serviceChargeValue || 0}%):</span>
+              <span>Xizmat ({Number(settings.serviceChargeValue ?? settings.service_charge_value) || 0}%):</span>
               <span className="text-foreground">{service.toLocaleString()}</span>
             </div>
 

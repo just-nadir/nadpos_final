@@ -1,6 +1,6 @@
 
 const axios = require('axios');
-const log = require('electron-log');
+const { logger } = require('../logger.cjs');
 const { db } = require('../database.cjs');
 
 /** Backend manzili: avval login da saqlangan, keyin .env, keyin localhost (VPS da build qilinganda login dan keladi) */
@@ -14,11 +14,11 @@ const CHECK_INTERVAL = 60000; // 1 minute
 let isSyncing = false;
 
 async function startSyncService() {
-    log.info("Sync Service Started...");
+    logger.info('Sinx', 'Sinx xizmati ishga tushdi');
 
     // Birinchi sinxni 10 soniyadan keyin (60 soniya kutmaslik uchun)
     setTimeout(() => {
-        processSyncQueue().catch((err) => log.error("Initial sync error:", err.message));
+        processSyncQueue().catch((err) => logger.error('Sinx', 'Birinchi sinx xatosi', err));
     }, 10000);
 
     setInterval(async () => {
@@ -26,7 +26,7 @@ async function startSyncService() {
         try {
             await processSyncQueue();
         } catch (error) {
-            log.error("Sync Error:", error.message);
+            logger.error('Sinx', 'Sinx xatosi', error);
         }
     }, CHECK_INTERVAL);
 }
@@ -34,7 +34,7 @@ async function startSyncService() {
 /** Savdo/bekor/smena yopilgandan keyin darhol sinxni boshlash uchun (60 soniya kutmaslik) */
 function triggerSyncNow() {
     setImmediate(() => {
-        processSyncQueue().catch((err) => log.error("Trigger sync error:", err.message));
+        processSyncQueue().catch((err) => logger.error('Sinx', 'Trigger sinx xatosi', err));
     });
 }
 
@@ -49,12 +49,12 @@ async function processSyncQueue() {
 
     const token = getAuthToken();
     if (!token) {
-        log.warn("Sync: No auth_token in settings, skipping. Login to POS to enable sync.");
+        logger.warn('Sinx', 'auth_token yo\'q, sinx o\'tkazilmaydi. POS da login qiling.');
         return;
     }
 
     isSyncing = true;
-    log.info(`Sync: Processing ${queueItems.length} items...`);
+    logger.info('Sinx', 'Navbat qayta ishlanmoqda', { count: queueItems.length });
 
     try {
 
@@ -88,10 +88,10 @@ async function processSyncQueue() {
         const ids = queueItems.map(i => i.id);
         const placeholders = ids.map(() => '?').join(',');
         db.prepare(`DELETE FROM sync_queue WHERE id IN (${placeholders})`).run(...ids);
-        log.info("Sync: Batch sent successfully, queue cleared.");
+        logger.info('Sinx', 'Batch yuborildi, navbat tozalandi');
     } catch (e) {
-        log.error("Sync Failed:", e.message);
-        if (e.response) log.error("Response status:", e.response.status, e.response.data);
+        logger.error('Sinx', 'Sinx muvaffaqiyatsiz', e);
+        if (e.response) logger.error('Sinx', 'Server javobi', { status: e.response.status, data: e.response.data });
     } finally {
         isSyncing = false;
     }

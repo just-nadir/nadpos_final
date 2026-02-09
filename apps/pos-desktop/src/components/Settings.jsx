@@ -11,7 +11,8 @@ import ConfirmModal from './ConfirmModal';
 import UpdateSettings from './settings/UpdateSettings';
 import { formatDate } from '../utils/dateUtils';
 import { cn } from '../utils/cn';
-import { useGlobal } from '../context/GlobalContext'; // Restore useGlobal
+import { useGlobal } from '../context/GlobalContext';
+import { appLog } from '../utils/appLog';
 
 const MobileAppSettings = () => {
   const [networkInfo, setNetworkInfo] = useState({ ips: [], port: 3001 });
@@ -28,7 +29,7 @@ const MobileAppSettings = () => {
           }
         })
         .catch(err => {
-          console.error("IP Error:", err);
+          appLog.error('Settings', 'IP olish xatosi', err);
           setNetworkInfo({ ips: [], port: 3001 });
         });
     }
@@ -115,7 +116,7 @@ const MobileAppSettings = () => {
 };
 
 const Settings = () => {
-  const { updateSettings, showToast } = useGlobal(); // Use global context
+  const { showToast, refreshSettings } = useGlobal();
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(false);
   const [kitchens, setKitchens] = useState([]);
@@ -202,8 +203,11 @@ const Settings = () => {
         printerReceiptType: 'driver'
       };
       await window.electron.ipcRenderer.invoke('save-settings', settingsToSave);
+      await refreshSettings();
       showToast('success', "Sozlamalar saqlandi!");
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      appLog.error('Settings', 'Sozlamalarni saqlash xatosi', err);
+    }
     setLoading(false);
   };
 

@@ -1,9 +1,9 @@
 const { autoUpdater } = require('electron-updater');
-const log = require('electron-log');
+const electronLog = require('electron-log');
 const { ipcMain, app } = require('electron');
+const { logger } = require('../logger.cjs');
 
-// Configure logger
-autoUpdater.logger = log;
+autoUpdater.logger = electronLog;
 autoUpdater.logger.transports.file.level = 'info';
 
 // Auto download is set to false to allow manual control
@@ -14,11 +14,10 @@ autoUpdater.autoDownload = false;
  * @param {BrowserWindow} mainWindow - The main window to send events to
  */
 function initUpdater(mainWindow) {
-  log.info('App starting...');
+  logger.info('Yangilash', 'Yangilash xizmati ishga tushdi');
 
   function sendStatusToWindow(text) {
-    log.info(text);
-    // Optional: send status text to window if needed for debugging
+    logger.info('Yangilash', text);
   }
 
   autoUpdater.on('checking-for-update', () => {
@@ -71,7 +70,7 @@ function initUpdater(mainWindow) {
     try {
       return await autoUpdater.checkForUpdates();
     } catch (error) {
-      log.error('Manual check failed:', error);
+      logger.error('Yangilash', 'Qo\'lda tekshirish muvaffaqiyatsiz', error);
       throw error;
     }
   });
@@ -86,7 +85,7 @@ function initUpdater(mainWindow) {
   try {
     autoUpdater.checkForUpdatesAndNotify();
   } catch (error) {
-    log.error('Failed to check for updates:', error);
+    logger.error('Yangilash', 'Yangilanishlarni tekshirishda xato', error);
   }
 }
 

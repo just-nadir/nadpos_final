@@ -1,5 +1,6 @@
-const { db, notify } = require('../database.cjs');
+const { db, notify, addToSyncQueue } = require('../database.cjs');
 const crypto = require('crypto');
+const { logger } = require('../logger.cjs');
 
 module.exports = {
   getHalls: () => db.prepare('SELECT * FROM halls WHERE deleted_at IS NULL ORDER BY sort_order ASC, name ASC').all(),
@@ -55,8 +56,7 @@ module.exports = {
         LEFT JOIN halls h ON t.hall_id = h.id 
         WHERE t.deleted_at IS NULL
     `).all();
-    console.log('IPC getTables returning:', rows.length, 'rows');
-    // console.log(JSON.stringify(rows.slice(0,3)));
+    logger.info('Stollar', 'getTables natijasi', { count: rows.length });
     return rows;
   },
 

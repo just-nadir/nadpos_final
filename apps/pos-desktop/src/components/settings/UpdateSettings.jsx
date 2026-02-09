@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, CheckCircle, AlertCircle, Download, Package, ArrowRight, Sparkles, FileText, X } from 'lucide-react';
 
+/** Versiya satrlarini solishtiradi (semver). remote > local bo'lsa 1, teng bo'lsa 0, remote < local bo'lsa -1 */
+function compareVersions(localStr, remoteStr) {
+    const parse = (s) => {
+        const v = String(s || '').replace(/^v/i, '').trim();
+        const parts = v.split('.').map(n => parseInt(n, 10) || 0);
+        return { major: parts[0] || 0, minor: parts[1] || 0, patch: parts[2] || 0 };
+    };
+    const local = parse(localStr);
+    const remote = parse(remoteStr);
+    if (remote.major !== local.major) return remote.major > local.major ? 1 : -1;
+    if (remote.minor !== local.minor) return remote.minor > local.minor ? 1 : -1;
+    if (remote.patch !== local.patch) return remote.patch > local.patch ? 1 : -1;
+    return 0;
+}
+
 const UpdateSettings = () => {
     const [loading, setLoading] = useState(false);
     const [version, setVersion] = useState('');
@@ -47,9 +62,10 @@ const UpdateSettings = () => {
 
         // Listen for "passive" update detection (e.g. on startup)
         if (window.api && window.api.onUpdateAvailable) {
-            window.api.onUpdateAvailable((info) => {
-                // Only update if we aren't already downloading or ready
-                if (!isDownloading && !showRestartButton) {
+            window.api.onUpdateAvailable(async (info) => {
+                if (isDownloading || showRestartButton) return;
+                const current = await window.api.getAppVersion?.();
+                if (compareVersions(current, info.version) > 0) {
                     setUpdateInfo(info);
                     setStatus({ type: 'success', msg: `Yangilanish topildi: v${info.version}` });
                 }
@@ -97,10 +113,13 @@ const UpdateSettings = () => {
                 if (result && result.updateInfo) {
                     const localVer = version;
                     const remoteVer = result.updateInfo.version;
+                    const cmp = compareVersions(localVer, remoteVer);
 
-                    if (localVer !== remoteVer) {
+                    if (cmp > 0) {
                         setUpdateInfo(result.updateInfo);
                         setStatus({ type: 'success', msg: `Yangilanish topildi: v${result.updateInfo.version}` });
+                    } else if (cmp < 0) {
+                        setStatus({ type: 'info', msg: `Sizning versiyangiz (${localVer}) serverdagi versiyadan (${remoteVer}) yangi. Yangilanish shart emas.` });
                     } else {
                         setStatus({ type: 'info', msg: 'Siz eng so\'nggi versiyadan foydalanmoqdasiz.' });
                     }

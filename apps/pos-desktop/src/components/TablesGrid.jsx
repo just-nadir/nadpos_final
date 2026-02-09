@@ -3,6 +3,7 @@ import {
   Users, Clock, Receipt, Hash, User, Search, ArrowRight, Calendar, AlertCircle
 } from 'lucide-react';
 import { useIpcListener } from '../hooks/useIpcListener';
+import { appLog } from '../utils/appLog';
 import { useGlobal } from '../context/GlobalContext';
 import { formatDate, formatTime } from '../utils/dateUtils';
 import { cn } from '../utils/cn';
@@ -46,7 +47,7 @@ const TablesGrid = ({ onSelectTable, selectedTableId }) => { // Accepted selecte
         setReservations(reservationsData || []);
       }
     } catch (error) {
-      console.error("Xatolik:", error);
+      appLog.error('TablesGrid', 'Ma\'lumot yuklash xatosi', error);
     } finally {
       setLoading(false);
     }
@@ -57,7 +58,7 @@ const TablesGrid = ({ onSelectTable, selectedTableId }) => { // Accepted selecte
   }, []);
 
   useIpcListener('db-change', (event, data) => {
-    if (['tables', 'sales', 'table-items', 'reservations'].includes(data.type)) { // Listen for reservations too
+    if (['halls', 'tables', 'sales', 'table-items', 'reservations'].includes(data.type)) {
       loadData();
     }
   });

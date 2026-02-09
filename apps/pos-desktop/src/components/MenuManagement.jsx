@@ -6,6 +6,7 @@ import { cn } from '../utils/cn';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
+import { useIpcListener } from '../hooks/useIpcListener';
 
 const ProductModal = ({ isOpen, onClose, onSubmit, newProduct, setNewProduct, categories, kitchens }) => {
   if (!isOpen) return null;
@@ -156,6 +157,11 @@ const MenuManagement = () => {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  // Realtime: kategoriya/mahsulot qo'shilganda yoki o'zgartirilganda ro'yxat yangilansin
+  useIpcListener('db-change', (event, data) => {
+    if (data.type === 'products' || data.type === 'categories') loadData();
+  });
 
   const handleAddCategory = async (e) => {
     e.preventDefault();

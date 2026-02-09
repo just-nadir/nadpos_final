@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { API_URL } from '../config/api';
+import { appLog } from '../utils/appLog';
 
 const GlobalContext = createContext();
 
@@ -24,7 +25,7 @@ export const GlobalProvider = ({ children }) => {
         const s = await window.electron.ipcRenderer.invoke('shift-status');
         setShift(s);
       } catch (err) {
-        console.error("Shift check error:", err);
+        appLog.error('GlobalContext', 'Shift tekshiruv xatosi', err);
       }
     }
   };
@@ -52,7 +53,7 @@ export const GlobalProvider = ({ children }) => {
       setLicenseExpired(false);
       return { success: true };
     } catch (licenseErr) {
-      console.warn('License check failed:', licenseErr?.message);
+      appLog.warn('GlobalContext', 'Litsenziya tekshiruvi muvaffaqiyatsiz: ' + (licenseErr?.message || ''));
       const msg = licenseErr.response?.data?.message || licenseErr.message || 'Serverga ulanib bo\'lmadi';
       return { success: false, error: msg };
     }
@@ -80,7 +81,7 @@ export const GlobalProvider = ({ children }) => {
           await checkShift();
 
         } catch (err) {
-          console.error("Global Context Init Error:", err);
+          appLog.error('GlobalContext', 'Init xatosi', err);
         } finally {
           setLoading(false);
         }
@@ -92,7 +93,7 @@ export const GlobalProvider = ({ children }) => {
           const res = await axios.get(apiUrl);
           setSettings(res.data || {});
         } catch (err) {
-          console.error("Browser Settings Load Error:", err);
+          appLog.error('GlobalContext', 'Browser sozlamalar yuklash xatosi', err);
         } finally {
           setLoading(false);
         }
@@ -133,11 +134,31 @@ export const GlobalProvider = ({ children }) => {
     localStorage.removeItem('token');
   };
 
+  /** Sozlamalarni backenddan qayta yuklash (masalan Sozlamalar saqlangandan keyin kassada xizmat haqi yangilansin) */
+  const refreshSettings = async () => {
+    if (window.electron) {
+      try {
+        const loaded = await window.electron.ipcRenderer.invoke('get-settings');
+        setSettings(loaded || {});
+      } catch (err) {
+        appLog.error('GlobalContext', 'refreshSettings xatosi', err);
+      }
+    } else {
+      try {
+        const res = await axios.get(`${window.location.origin}/api/settings`);
+        setSettings(res.data || {});
+      } catch (err) {
+        appLog.error('GlobalContext', 'refreshSettings xatosi', err);
+      }
+    }
+  };
+
   const value = {
     user,
     login,
     logout,
     settings,
+    refreshSettings,
     loading,
     toast,      // Export qilamiz
     showToast,   // Export qilamiz

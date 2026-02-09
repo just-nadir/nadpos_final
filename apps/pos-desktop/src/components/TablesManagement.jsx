@@ -5,6 +5,7 @@ import ConfirmModal from './ConfirmModal';
 import { cn } from '../utils/cn'; // Assuming cn utility exists from previous edits or standard codebase
 import { Button } from './ui/button'; // Assuming button component exists
 import { Input } from './ui/input'; // Assuming input component exists
+import { useIpcListener } from '../hooks/useIpcListener';
 
 // --- MODAL KOMPONENT ---
 const TableModal = ({ isOpen, onClose, onSubmit, newTableName, setNewTableName, activeHallName }) => {
@@ -73,6 +74,12 @@ const TablesManagement = () => {
 
   useEffect(() => { loadHalls(); }, []);
   useEffect(() => { loadTables(); }, [activeHall]);
+
+  // Realtime: zal/stol qo'shilganda yoki o'chirilganda ro'yxat darhol yangilansin
+  useIpcListener('db-change', (event, data) => {
+    if (data.type === 'halls') loadHalls();
+    if (data.type === 'tables') loadTables();
+  });
 
   const handleReorder = async (newOrder) => {
     setHalls(newOrder);

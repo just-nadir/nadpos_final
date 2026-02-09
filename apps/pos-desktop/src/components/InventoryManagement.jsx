@@ -7,6 +7,7 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import ConfirmModal from './ConfirmModal';
+import { useIpcListener } from '../hooks/useIpcListener';
 
 // --- MODAL: Yangi Kirim (Touch Optimized) ---
 const CreateSupplyModal = ({ isOpen, onClose, onCreate }) => {
@@ -251,6 +252,9 @@ const SupplyEditor = ({ supplyId, onClose, refreshHelper }) => {
                 onClose={() => setConfirmState({ ...confirmState, isOpen: false })}
                 onConfirm={confirmState.onConfirm}
                 message={confirmState.message}
+                confirmText="Tasdiqlash"
+                cancelText="Bekor qilish"
+                isDanger={false}
             />
         </div>
     );
@@ -280,6 +284,11 @@ const InventoryManagement = () => {
     };
 
     useEffect(() => { loadData(); }, [activeTab]);
+
+    // Realtime: mahsulotlar o'zgarganda (Menyu boshqaruvidan) ro'yxat yangilansin
+    useIpcListener('db-change', (event, data) => {
+        if (data.type === 'products') loadData();
+    });
 
     const handleCreateSupply = async (data) => {
         try {

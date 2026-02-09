@@ -2,9 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require("socket.io");
-const { onChange } = require('./database.cjs'); // Signal
+const { onChange } = require('./database.cjs');
 const ip = require('ip');
 const path = require('path');
+const { logger } = require('./logger.cjs');
 
 // OPTIMIZATSIYA: Simple in-memory cache
 const cache = new Map();
@@ -58,29 +59,27 @@ function startServer() {
   // OPTIMIZATSIYA: Room-based broadcasting
   // Har bir hall uchun alohida room yaratamiz
   io.on('connection', (socket) => {
-    console.log('📱 Yangi qurilma ulandi:', socket.id);
+    logger.info('Server', 'Yangi qurilma ulandi', { socketId: socket.id });
 
-    // Client o'zining hallini ko'rsatishi mumkin
     socket.on('join-hall', (hallId) => {
       socket.join(`hall-${hallId}`);
-      console.log(`🏛️ Socket ${socket.id} joined hall-${hallId}`);
+      logger.info('Server', `Socket hall-${hallId} ga qo'shildi`, { socketId: socket.id });
     });
 
-    // Barcha yangilanishlarni olish uchun (admin va hisobotlar)
     socket.on('join-global', () => {
       socket.join('global');
-      console.log(`🌍 Socket ${socket.id} joined global updates`);
+      logger.info('Server', 'Socket global yangilanishlariga qo\'shildi', { socketId: socket.id });
     });
 
     socket.on('disconnect', () => {
-      console.log('❌ Qurilma uzildi:', socket.id);
+      logger.info('Server', 'Qurilma uzildi', { socketId: socket.id });
     });
   });
 
   // OPTIMIZATSIYA: Intelligent broadcasting
   // Faqat kerakli room'ga yuborish
   onChange((type, id) => {
-    console.log(`📡 Update: ${type} ${id || ''}`);
+    logger.info('Server', 'Ma\'lumot yangilandi', { type, id: id || '' });
 
     // Table yangilanishi - faqat tegishli hallga
     if (type === 'table' && id) {
@@ -113,9 +112,10 @@ function startServer() {
   app.post('/api/login', (req, res) => {
     try {
       const { pin } = req.body;
-      const user = staffController.login(pin); // Bazadan tekshiramiz
+      const user = staffController.login(pin);
       res.json(user);
     } catch (e) {
+      logger.warn('Server', "API login: Noto'g'ri PIN", e.message);
       res.status(401).json({ error: "Noto'g'ri PIN kod" });
     }
   });
@@ -126,6 +126,7 @@ function startServer() {
       const localIp = ip.address();
       res.json({ ip: localIp, port: PORT });
     } catch (e) {
+      logger.error('Server', 'System info xatosi', e);
       res.status(500).json({ error: e.message });
     }
   });
@@ -164,7 +165,7 @@ function startServer() {
       orderController.addItem(req.body);
       res.json({ success: true });
     } catch (e) {
-      console.error(e);
+      logger.error('Server', 'API orders/add xatosi', e);
       res.status(500).json({ error: e.message });
     }
   });
@@ -172,17 +173,12 @@ function startServer() {
   // --- TUZATILGAN JOY ---
   app.post('/api/orders/bulk-add', (req, res) => {
     try {
-      // waiterId ni qabul qilib olamiz
       const { tableId, items, waiterId } = req.body;
-
       if (!tableId || !items || !Array.isArray(items)) throw new Error("Noto'g'ri ma'lumot");
-
-      // Controllerga waiterId ni ham yuboramiz
       orderController.addBulkItems(tableId, items, waiterId);
-
       res.json({ success: true });
     } catch (e) {
-      console.error(e);
+      logger.error('Server', 'API orders/bulk-add xatosi', e);
       res.status(500).json({ error: e.message });
     }
   });
@@ -201,7 +197,7 @@ function startServer() {
       tableController.updateTableGuests(tableId, count);
       res.json({ success: true });
     } catch (e) {
-      console.error(e);
+      logger.error('Server', 'API tables/guests xatosi', e);
       res.status(500).json({ error: e.message });
     }
   });
@@ -218,9 +214,7 @@ function startServer() {
 
   httpServer.listen(PORT, '0.0.0.0', () => {
     const localIp = ip.address();
-    console.log(`============================================`);
-    console.log(`📡 REAL-TIME SERVER: http://${localIp}:${PORT}`);
-    console.log(`============================================`);
+    logger.info('Server', `Real-time server ishga tushdi: http://${localIp}:${PORT}`);
   });
 }
 

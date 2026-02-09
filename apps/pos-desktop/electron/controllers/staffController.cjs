@@ -1,5 +1,5 @@
-const { db, notify } = require('../database.cjs');
-const log = require('electron-log');
+const { db, notify, addToSyncQueue } = require('../database.cjs');
+const { logger } = require('../logger.cjs');
 const crypto = require('crypto');
 
 // Yordamchi: Hashlash funksiyasi
@@ -33,7 +33,7 @@ module.exports = {
           .run(user.name, user.role, perms, user.id);
         // addToSyncQueue removed
       }
-      log.info(`XODIM: ${user.name} (${user.role}) ma'lumotlari o'zgartirildi.`);
+      logger.info('Xodim', 'Xodim ma\'lumotlari o\'zgartirildi', { name: user.name, role: user.role });
     } else {
       // Yangi user qo'shish
       const allUsers = db.prepare('SELECT pin, salt FROM users WHERE deleted_at IS NULL').all();
@@ -50,7 +50,7 @@ module.exports = {
         .run(id, user.name, hash, user.role, salt, perms);
       // addToSyncQueue removed
 
-      log.info(`XODIM: Yangi xodim qo'shildi: ${user.name} (${user.role})`);
+      logger.info('Xodim', 'Yangi xodim qo\'shildi', { name: user.name, role: user.role });
     }
     notify('users', null);
   },
@@ -64,7 +64,7 @@ module.exports = {
 
     const res = db.prepare("UPDATE users SET deleted_at = ?, is_synced = 0 WHERE id = ?").run(new Date().toISOString(), id);
     addToSyncQueue('users', id, 'DELETE', { deleted_at: new Date().toISOString() });
-    log.warn(`XODIM: Xodim o'chirildi. ID: ${id}, Ism: ${user?.name}`);
+    logger.warn('Xodim', 'Xodim o\'chirildi', { id, name: user?.name });
     notify('users', null);
     return res;
   },
@@ -86,7 +86,7 @@ module.exports = {
       throw new Error("Noto'g'ri PIN kod");
     }
 
-    log.info(`LOGIN: ${foundUser.name} (${foundUser.role}) tizimga kirdi.`);
+    logger.info('Auth', 'Tizimga kirish muvaffaqiyatli', { name: foundUser.name, role: foundUser.role });
 
     // Parse permissions if string
     let parsedPerms = null;

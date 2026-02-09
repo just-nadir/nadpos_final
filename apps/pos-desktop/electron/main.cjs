@@ -1,24 +1,17 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const log = require('electron-log');
+const { logger, logFromRenderer } = require('./logger.cjs');
 const { initDB, onChange } = require('./database.cjs');
 const startServer = require('./server.cjs');
 const registerIpcHandlers = require('./ipcHandlers.cjs');
 const { initUpdater } = require('./services/updaterService.cjs');
 const { startSyncService } = require('./services/syncService.cjs');
 
-
-// --- LOGGER SOZLAMALARI ---
-log.transports.file.level = 'info';
-log.transports.file.fileName = 'logs.txt';
-log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
-Object.assign(console, log.functions);
-
 process.on('uncaughtException', (error) => {
-  log.error('KRITIK XATOLIK (Main):', error);
+  logger.error('Main', 'Kritik xatolik (uncaughtException)', error);
 });
 process.on('unhandledRejection', (reason) => {
-  log.error('Ushlanmagan Promise:', reason);
+  logger.error('Main', 'Ushlanmagan Promise', reason);
 });
 
 // app.disableHardwareAcceleration();
@@ -51,7 +44,7 @@ function createWindow() {
   } else {
     if (!app.isPackaged) {
       win.loadURL('http://localhost:5180');
-      console.log("Development rejimida: http://localhost:5180 yuklanmoqda...");
+      logger.info('Main', "Development rejimida: http://localhost:5180 yuklanmoqda");
     } else {
       win.loadFile(path.join(__dirname, '../dist/index.html'));
     }
@@ -61,22 +54,26 @@ function createWindow() {
   initUpdater(win);
 
   win.webContents.on('render-process-gone', (event, details) => {
-    log.error('Renderer jarayoni quladi:', details.reason);
+    logger.error('Main', 'Renderer jarayoni quladi', details.reason);
     if (details.reason === 'crashed') {
       win.reload();
     }
   });
 }
 
+ipcMain.handle('log-from-renderer', (e, payload) => {
+  logFromRenderer(payload);
+});
+
 app.whenReady().then(() => {
   try {
     initDB();
     startServer();
     startSyncService();
-    registerIpcHandlers(ipcMain); // Handlerlar faqat BIR MARTA ro'yxatdan o'tadi
-    log.info("Dastur ishga tushdi. Baza, Server yondi.");
+    registerIpcHandlers(ipcMain);
+    logger.info('Main', 'Dastur ishga tushdi. Baza va server yondi.');
   } catch (err) {
-    log.error("Boshlang'ich yuklashda xato:", err);
+    logger.error('Main', "Boshlang'ich yuklashda xato", err);
   }
 
   createWindow();
@@ -84,6 +81,6 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  log.info("Dastur yopildi.");
+  logger.info('Main', 'Dastur yopildi.');
   if (process.platform !== 'darwin') app.quit();
 });

@@ -1,4 +1,5 @@
 const { db, uuidv4, notify } = require('../database.cjs');
+const { logger } = require('../logger.cjs');
 
 const inventoryController = {
     // 1. Yangi hujjat yaratish (Draft)
@@ -13,7 +14,7 @@ const inventoryController = {
 
             return { id, status: 'draft' };
         } catch (err) {
-            console.error("createDraftSupply error:", err);
+            logger.error('Ombor', 'createDraftSupply xatosi', err);
             throw err;
         }
     },
@@ -43,7 +44,7 @@ const inventoryController = {
 
             return transaction();
         } catch (err) {
-            console.error("addSupplyItem error:", err);
+            logger.error('Ombor', 'addSupplyItem xatosi', err);
             throw err;
         }
     },
@@ -71,7 +72,7 @@ const inventoryController = {
 
             return transaction();
         } catch (err) {
-            console.error("removeSupplyItem error:", err);
+            logger.error('Ombor', 'removeSupplyItem xatosi', err);
             throw err;
         }
     },
@@ -117,7 +118,7 @@ const inventoryController = {
             notify('products', null); // Mahsulotlar yangilangani haqida xabar berish
             return res;
         } catch (err) {
-            console.error("completeSupply error:", err);
+            logger.error('Ombor', 'completeSupply xatosi', err);
             throw err;
         }
     },
@@ -136,7 +137,7 @@ const inventoryController = {
             query += ` ORDER BY created_at DESC LIMIT 100`;
             return db.prepare(query).all(...params);
         } catch (err) {
-            console.error("getSupplies error:", err);
+            logger.error('Ombor', 'getSupplies xatosi', err);
             return [];
         }
     },
@@ -156,7 +157,7 @@ const inventoryController = {
 
             return { ...supply, items };
         } catch (err) {
-            console.error("getSupplyDetails error:", err);
+            logger.error('Ombor', 'getSupplyDetails xatosi', err);
             return null;
         }
     },
@@ -178,7 +179,7 @@ const inventoryController = {
             transaction();
             return { success: true };
         } catch (err) {
-            console.error("deleteSupply error:", err);
+            logger.error('Ombor', 'deleteSupply xatosi', err);
             throw err;
         }
     }

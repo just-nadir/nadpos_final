@@ -1,4 +1,5 @@
 const { db, notify } = require('../database.cjs');
+const { logger } = require('../logger.cjs');
 const crypto = require('crypto');
 
 module.exports = {
@@ -144,7 +145,7 @@ module.exports = {
             notify('products', null);
             return result;
         } catch (err) {
-            console.error("addSupply error:", err);
+            logger.error('Menyu', 'addSupply xatosi', err);
             throw err;
         }
     },
@@ -159,7 +160,7 @@ module.exports = {
                 LIMIT 500
             `).all();
         } catch (err) {
-            console.error("getStockHistory error:", err);
+            logger.error('Menyu', 'getStockHistory xatosi', err);
             return [];
         }
     }

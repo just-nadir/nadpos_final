@@ -1,7 +1,7 @@
 const { db, notify, addToSyncQueue } = require('../database.cjs');
 const printerService = require('../services/printerService.cjs');
 const { triggerSyncNow } = require('../services/syncService.cjs');
-const log = require('electron-log');
+const { logger } = require('../logger.cjs');
 const crypto = require('crypto');
 const shiftController = require('../controllers/shiftController.cjs'); // YANGI
 
@@ -24,7 +24,7 @@ function getDefaultKitchen() {
         const firstKitchen = db.prepare('SELECT id FROM kitchens ORDER BY id ASC LIMIT 1').get();
         return firstKitchen ? String(firstKitchen.id) : '1';
     } catch (err) {
-        log.error("Default oshxonani olishda xato:", err);
+        logger.error('Buyurtma', "Default oshxonani olishda xato", err);
         return '1';
     }
 }
@@ -72,7 +72,7 @@ module.exports = {
 
             return { ...res, checkNumber };
         } catch (err) {
-            log.error("addItem xatosi:", err);
+            logger.error('Buyurtma', "addItem xatosi", err);
             throw err;
         }
     },
@@ -99,7 +99,7 @@ module.exports = {
                     // 1. _map_tables mavjudligini tekshiramiz (Migratsiyadan qolgan)
                     const mapping = db.prepare('SELECT new_id FROM _map_tables WHERE old_id = ?').get(tableId);
                     if (mapping && mapping.new_id) {
-                        log.info(`🔄 Legacy ID Mapping: Table ${tableId} -> ${mapping.new_id}`);
+                        logger.info('Buyurtma', 'Legacy ID mapping', { tableId, newId: mapping.new_id });
                         tableId = mapping.new_id;
                         tableExists = { id: tableId };
                     }
@@ -114,16 +114,16 @@ module.exports = {
                         const match = db.prepare(`SELECT id, name FROM tables WHERE name IN (${placeholders}) LIMIT 1`).get(...candidates);
 
                         if (match) {
-                            log.info(`🧠 Heuristic Match: Mapped Legacy ID "${tableId}" -> Table "${match.name}" (${match.id})`);
+                            logger.info('Buyurtma', 'Heuristic stol topildi', { tableId, name: match.name, id: match.id });
                             tableId = match.id;
                             tableExists = { id: match.id };
                         }
-                    } catch (hErr) { log.warn("Heuristic search failed", hErr); }
+                    } catch (hErr) { logger.warn('Buyurtma', 'Heuristic qidiruv muvaffaqiyatsiz', hErr); }
                 }
             }
 
             if (!tableExists) {
-                log.warn(`⚠️ addBulkItems: Stol topilmadi (ID: ${tableId}). Mobile app ma'lumotlarini yangilash kerak.`);
+                logger.warn('Buyurtma', 'addBulkItems: Stol topilmadi. Mobil ilovani yangilang.', { tableId });
                 throw new Error("Stol topilmadi. Iltimos, ilovani yangilang (Sinxronizatsiya).");
             }
 
@@ -145,14 +145,14 @@ module.exports = {
                             actualDestination = product.destination;
 
                             if (item.destination !== actualDestination) {
-                                log.warn(`🔄 Destination o'zgardi: "${item.name}" - Old: ${item.destination} → New: ${actualDestination}`);
+                                logger.warn('Buyurtma', "Taom destination o'zgardi", { name: item.name, old: item.destination, new: actualDestination });
                             }
                         } else {
-                            log.warn(`⚠️ Taom bazadan topilmadi yoki destination yo'q: "${item.name}", Default ishlatilmoqda`);
+                            logger.warn('Buyurtma', "Taom bazada yo'q yoki destination yo'q, default ishlatilmoqda", { name: item.name });
                             actualDestination = getDefaultKitchen();
                         }
                     } catch (dbErr) {
-                        log.error(`Taom destination olishda xato: ${item.name}`, dbErr);
+                        logger.error('Buyurtma', `Taom destination xatosi: ${item.name}`, dbErr);
                         actualDestination = getDefaultKitchen();
                     }
 
@@ -219,17 +219,17 @@ module.exports = {
                     const tableName = freshTable ? `${freshTable.hall_name} ${freshTable.table_name}` : "Stol";
                     const nameToPrint = (waiterName && waiterName !== "Noma'lum") ? waiterName : (freshTable.waiter_name || "Kassir");
 
-                    log.info(`📄 Printer uchun tayyor: ${validatedItems.length} ta taom, Check #${checkNumber}`);
+                    logger.info('Buyurtma', 'Printer uchun tayyor', { count: validatedItems.length, checkNumber });
                     await printerService.printKitchenTicket(validatedItems, tableName, checkNumber, nameToPrint);
                 } catch (printErr) {
-                    log.error("Oshxona printeri xatosi:", printErr);
+                    logger.error('Buyurtma', 'Oshxona printeri xatosi', printErr);
                     notify('printer-error', `Oshxona printeri: ${printErr.message}`);
                 }
             }, 100);
 
             return { items: validatedItems, checkNumber };
         } catch (err) {
-            log.error("addBulkItems xatosi:", err);
+            logger.error('Buyurtma', 'addBulkItems xatosi', err);
             throw err;
         }
     },
@@ -283,11 +283,11 @@ module.exports = {
             db.prepare("UPDATE tables SET status = 'payment' WHERE id = ?").run(tableId);
             notify('tables', null);
 
-            log.info(`HISOB chop etildi: Stol #${tableId}, Check #${checkNumber}`);
+            logger.info('Buyurtma', 'Hisob chop etildi', { tableId, checkNumber });
             return { success: true, checkNumber };
 
         } catch (err) {
-            log.error("printCheck xatosi:", err);
+            logger.error('Buyurtma', 'printCheck xatosi', err);
             notify('printer-error', `HISOB chiqarishda xato: ${err.message}`);
             throw err;
         }
@@ -494,13 +494,13 @@ module.exports = {
                         paymentDetails // Pass payment details for split payment receipts
                     });
                 } catch (err) {
-                    log.error("Kassa printeri xatosi:", err);
+                    logger.error('Buyurtma', 'Kassa printeri xatosi', err);
                     notify('printer-error', `Kassa printeri: ${err.message}`);
                 }
             }, 100);
             return res;
         } catch (err) {
-            log.error("Checkout xatosi:", err);
+            logger.error('Buyurtma', 'Checkout xatosi', err);
             throw err;
         }
     },
@@ -519,11 +519,11 @@ module.exports = {
 
             const sales = db.prepare(query).all(startDate, endDate);
 
-            log.info(`getSales: ${startDate} dan ${endDate} gacha ${sales.length} ta savdo topildi`);
+            logger.info('Buyurtma', 'getSales natijasi', { startDate, endDate, count: sales.length });
             return sales;
 
         } catch (err) {
-            log.error("getSales xatosi:", err);
+            logger.error('Buyurtma', 'getSales xatosi', err);
             throw err;
         }
     },
@@ -580,10 +580,10 @@ module.exports = {
             cancelTransaction();
             notify('tables', null);
             notify('table-items', tableId);
-            log.info(`Stol #${tableId} buyurtmasi bekor qilindi va arxivlandi`);
+            logger.info('Buyurtma', 'Buyurtma bekor qilindi va arxivlandi', { tableId });
             return { success: true };
         } catch (err) {
-            log.error("Order cancel error:", err);
+            logger.error('Buyurtma', 'Order cancel xatosi', err);
             throw err;
         }
     },
@@ -600,7 +600,7 @@ module.exports = {
             `;
             return db.prepare(query).all(startDate, endDate);
         } catch (err) {
-            log.error("getCancelledOrders xatosi:", err);
+            logger.error('Buyurtma', 'getCancelledOrders xatosi', err);
             throw err;
         }
     },
@@ -638,14 +638,14 @@ module.exports = {
             const results = db.prepare(query).all(...params);
             return results;
         } catch (err) {
-            log.error("getSalesTrend xatosi:", err);
+            logger.error('Buyurtma', 'getSalesTrend xatosi', err);
             return [];
         }
     },
 
     getSalesByShift: (shiftId) => {
         try {
-            log.info("getSalesByShift called for ID:", shiftId);
+            logger.info('Buyurtma', 'getSalesByShift chaqirildi', { shiftId });
             const query = `
                 SELECT s.*, c.name as customer_name 
                 FROM sales s
@@ -654,10 +654,10 @@ module.exports = {
                 ORDER BY s.date DESC
             `;
             const sales = db.prepare(query).all(shiftId);
-            log.info(`Found ${sales.length} sales for shift ${shiftId}`);
+            logger.info('Buyurtma', 'Smena savdlari topildi', { shiftId, count: sales.length });
             return sales;
         } catch (err) {
-            log.error("getSalesByShift xatosi:", err);
+            logger.error('Buyurtma', 'getSalesByShift xatosi', err);
             return [];
         }
     },
@@ -702,11 +702,11 @@ module.exports = {
 
             notify('tables', null);
             notify('table-items', tableId);
-            log.info(`Mahsulot o'chirildi: ${itemId}`);
+            logger.info('Buyurtma', 'Mahsulot o\'chirildi', { itemId });
             return { success: true };
 
         } catch (err) {
-            log.error("removeItem xatosi:", err);
+            logger.error('Buyurtma', 'removeItem xatosi', err);
             throw err;
         }
     },
@@ -770,11 +770,11 @@ module.exports = {
 
             notify('tables', null);
             notify('table-items', tableId);
-            log.info(`Mahsulot qaytarildi (Partial): ${itemId}, Qty: ${quantity}`);
+            logger.info('Buyurtma', 'Mahsulot qisman qaytarildi', { itemId, quantity });
             return { success: true };
 
         } catch (err) {
-            log.error("returnItem xatosi:", err);
+            logger.error('Buyurtma', 'returnItem xatosi', err);
             throw err;
         }
     },
@@ -835,11 +835,11 @@ module.exports = {
             notify('table-items', fromTableId); // Eski stolni update qilish (bo'shatish uchun)
             notify('table-items', toTableId);   // Yangi stolni update qilish
 
-            log.info(`Stol ko'chirildi: ${fromTableId} -> ${toTableId}`);
+            logger.info('Buyurtma', 'Stol ko\'chirildi', { fromTableId, toTableId });
             return { success: true };
 
         } catch (err) {
-            log.error("moveTable xatosi:", err);
+            logger.error('Buyurtma', 'moveTable xatosi', err);
             throw err;
         }
     },
@@ -853,7 +853,7 @@ module.exports = {
                 items: JSON.parse(sale.items_json || '[]')
             };
         } catch (err) {
-            log.error("getSaleDetails xatosi:", err);
+            logger.error('Buyurtma', 'getSaleDetails xatosi', err);
             throw err;
         }
     },
@@ -924,7 +924,7 @@ module.exports = {
 
             return { success: true };
         } catch (err) {
-            log.error("Reprint receipt error:", err);
+            logger.error('Buyurtma', 'Reprint receipt xatosi', err);
             throw err;
         }
     }

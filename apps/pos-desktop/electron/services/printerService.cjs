@@ -1,6 +1,6 @@
 const { BrowserWindow } = require('electron');
 const { db } = require('../database.cjs');
-const log = require('electron-log');
+const { logger } = require('../logger.cjs');
 const QRCode = require('qrcode');
 
 // Date Formatter (Uzbekistan Format: DD.MM.YYYY HH:mm)
@@ -27,7 +27,7 @@ function getSettings() {
         const rows = db.prepare('SELECT * FROM settings').all();
         return rows.reduce((acc, row) => { acc[row.key] = row.value; return acc; }, {});
     } catch (e) {
-        console.error("Sozlamalarni olishda xato:", e);
+        logger.error('Printer', 'Sozlamalarni olishda xato', e);
         return {};
     }
 }
@@ -111,10 +111,10 @@ async function printHtml(htmlContent, printerName) {
         };
 
         if (!printerName || printerName.trim() === '') {
-            console.warn("⚠️ Printer nomi ko'rsatilmagan yoki bo'sh, default printer ishlatiladi.");
+            logger.warn('Printer', 'Printer nomi bo\'sh, default ishlatiladi');
             delete options.deviceName;
         } else {
-            console.log(`🖨 Chop etilmoqda (HTML): ${printerName}`);
+            logger.info('Printer', 'Chop etilmoqda (HTML)', { printerName });
         }
 
         await new Promise((resolve, reject) => {
@@ -126,10 +126,10 @@ async function printHtml(htmlContent, printerName) {
                 }
             });
         });
-        console.log("✅ Muvaffaqiyatli chop etildi!");
+        logger.info('Printer', 'Muvaffaqiyatli chop etildi');
 
     } catch (error) {
-        console.error("❌ Chop etishda xatolik:", error);
+        logger.error('Printer', 'Chop etishda xatolik', error);
         throw error;
     } finally {
         workerWindow.close();
@@ -181,7 +181,7 @@ module.exports = {
                 });
                 qrCodeHtml = `<img src="${qrDataUrl}" style="width: 100%; max-width: 80px; height: auto; border: 1px solid #eee;" />`;
             } catch (qrErr) {
-                log.error("QR kod yaratishda xato:", qrErr);
+                logger.error('Printer', 'QR kod yaratishda xato', qrErr);
             }
         }
 
@@ -287,7 +287,7 @@ module.exports = {
                 });
                 qrCodeHtml = `<img src="${qrDataUrl}" style="width: 100%; max-width: 80px; height: auto; border: 1px solid #eee;" />`;
             } catch (qrErr) {
-                log.error("QR kod yaratishda xato:", qrErr);
+                logger.error('Printer', 'QR kod yaratishda xato', qrErr);
             }
         }
 
@@ -364,7 +364,7 @@ module.exports = {
             const kitchens = db.prepare('SELECT * FROM kitchens').all();
 
             if (!kitchens || kitchens.length === 0) {
-                log.error("❌ Oshxonalar bazada topilmadi! Printer ishlamaydi.");
+                logger.error('Printer', 'Oshxonalar bazada topilmadi, printer ishlamaydi');
                 return;
             }
 
@@ -387,18 +387,18 @@ module.exports = {
                 let fallbackUsed = false;
 
                 if (!kitchen) {
-                    log.warn(`⚠️ Oshxona topilmadi (ID: ${kitchenId}), default oshxonaga yuborilmoqda`);
+                    logger.warn('Printer', 'Oshxona topilmadi, default ishlatilmoqda', { kitchenId });
                     targetKitchen = defaultKitchen;
                     fallbackUsed = true;
                 } else if (!kitchen.printer_ip) {
-                    log.warn(`⚠️ Printer IP mavjud emas (${kitchen.name}), default printerga yuborilmoqda`);
+                    logger.warn('Printer', 'Printer IP yo\'q, default printerga yuborilmoqda', { kitchen: kitchen.name });
                     targetKitchen = defaultKitchen;
                     fallbackUsed = true;
                 }
 
                 // Agar hali ham printer topilmasa, skip qilamiz
                 if (!targetKitchen || !targetKitchen.printer_ip) {
-                    log.error(`❌ JIDDIY: Hech qanday ishlaydigan printer topilmadi! Taomlar: ${kitchenItems.map(i => i.name).join(', ')}`);
+                    logger.error('Printer', 'Ishlaydigan printer topilmadi', { items: kitchenItems.map(i => i.name).join(', ') });
                     continue;
                 }
 
@@ -406,7 +406,7 @@ module.exports = {
                     ? `${targetKitchen.name} (FALLBACK)`
                     : targetKitchen.name;
 
-                log.info(`👨‍🍳 Oshxonaga yuborilmoqda: ${kitchenName} - ${kitchenItems.length} ta taom`);
+                logger.info('Printer', 'Oshxonaga yuborilmoqda', { kitchenName, count: kitchenItems.length });
 
                 const itemsHtml = kitchenItems.map(item => `
                     <tr>
@@ -459,24 +459,24 @@ module.exports = {
 
                 try {
                     await printHtml(fullHtml, targetKitchen.printer_ip);
-                    log.info(`✅ ${kitchenName}ga muvaffaqiyatli yuborildi`);
+                    logger.info('Printer', 'Oshxonaga muvaffaqiyatli yuborildi', { kitchenName });
                 } catch (printErr) {
-                    log.error(`❌ ${kitchenName} printerida xato:`, printErr);
+                    logger.error('Printer', `${kitchenName} printerida xato`, printErr);
 
                     // Agar fallback ham ishlamasa, oxirgi urinish - default printerga
                     if (!fallbackUsed && defaultKitchen && defaultKitchen.printer_ip !== targetKitchen.printer_ip) {
-                        log.warn(`🔄 Oxirgi urinish: Default printerga (${defaultKitchen.name})`);
+                        logger.warn('Printer', 'Oxirgi urinish: default printerga', { name: defaultKitchen.name });
                         try {
                             await printHtml(fullHtml, defaultKitchen.printer_ip);
-                            log.info(`✅ Default printerda muvaffaqiyatli!`);
+                            logger.info('Printer', 'Default printerda muvaffaqiyatli');
                         } catch (lastErr) {
-                            log.error(`❌ Default printer ham ishlamadi:`, lastErr);
+                            logger.error('Printer', 'Default printer ham ishlamadi', lastErr);
                         }
                     }
                 }
             }
         } catch (err) {
-            log.error("❌ printKitchenTicket umumiy xatosi:", err);
+            logger.error('Printer', 'printKitchenTicket umumiy xatosi', err);
             throw err;
         }
     },
@@ -660,7 +660,7 @@ module.exports = {
             const printers = await win.webContents.getPrintersAsync();
             return printers;
         } catch (e) {
-            console.error("Printerlarni olishda xato:", e);
+            logger.error('Printer', 'Printerlarni olishda xato', e);
             return [];
         } finally {
             win.destroy();

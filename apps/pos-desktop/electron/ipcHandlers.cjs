@@ -1,6 +1,6 @@
 const { app } = require('electron');
 const { db, notify } = require('./database.cjs');
-const log = require('electron-log');
+const { logger } = require('./logger.cjs');
 
 // Controllerlarni import qilish
 const tableController = require('./controllers/tableController.cjs');
@@ -24,13 +24,11 @@ function registerIpcHandlers(ipcMain) {
     // ==========================================
     ipcMain.handle('login', async (event, pin) => {
         try {
-            console.log('ipcHandlers: pin received:', pin);
             const res = staffController.login(pin);
-            console.log('ipcHandlers: login result:', res);
             return res;
         } catch (error) {
-            log.warn('Login failed:', error.message);
-            throw error; // Frontendga xatoni qaytaramiz
+            logger.warn('Auth', 'Login muvaffaqiyatsiz', error.message);
+            throw error;
         }
     });
 
@@ -48,7 +46,7 @@ function registerIpcHandlers(ipcMain) {
         try {
             return tableController.addTable(hallId, name);
         } catch (error) {
-            log.error('add-table error:', error);
+            logger.error('IPC', 'add-table xatosi', error);
             throw error;
         }
     });
@@ -103,7 +101,7 @@ function registerIpcHandlers(ipcMain) {
         try {
             return await orderController.printCheck(tableId);
         } catch (error) {
-            log.error('print-check xatosi:', error);
+            logger.error('IPC', 'print-check xatosi', error);
             throw error;
         }
     });
@@ -210,7 +208,7 @@ function registerIpcHandlers(ipcMain) {
             const id = await machineId();
             return id;
         } catch (error) {
-            log.error('Machine ID error:', error);
+            logger.error('IPC', 'Machine ID olishda xato', error);
             throw error;
         }
     });

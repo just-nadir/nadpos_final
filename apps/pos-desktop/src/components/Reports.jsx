@@ -14,6 +14,7 @@ import { formatDate, formatTime, formatDateTime } from '../utils/dateUtils';
 import { cn } from '../utils/cn';
 import { Button } from './ui/button';
 import SaleDetailModal from './SaleDetailModal';
+import { appLog } from '../utils/appLog';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1'];
 
@@ -96,28 +97,25 @@ const Reports = () => {
       setTrendData(tData || []);
       setShiftsData(shifts || []);
     } catch (err) {
-      console.error(err);
+      appLog.error('Reports', 'Ma\'lumot yuklash xatosi', err);
     } finally {
       setLoading(false);
     }
   };
 
   const loadShiftDetails = async (shift) => {
-    console.log("loadShiftDetails called for shift:", shift);
     if (!window.electron) {
-      console.error("Window.electron is missing!");
+      appLog.warn('Reports', 'Window.electron mavjud emas');
       return;
     }
     setLoading(true);
     try {
       const { ipcRenderer } = window.electron;
-      console.log("Invoking get-sales-by-shift...");
       const sales = await ipcRenderer.invoke('get-sales-by-shift', shift.id);
-      console.log("Sales received:", sales);
       setShiftSales(sales || []);
       setSelectedShift(shift);
     } catch (err) {
-      console.error("loadShiftDetails error:", err);
+      appLog.error('Reports', 'loadShiftDetails xatosi', err);
     } finally {
       setLoading(false);
     }
@@ -379,7 +377,7 @@ const Reports = () => {
       {/* Sales Trend (30 Days) */}
       <div className="bg-card p-6 rounded-2xl border border-border shadow-sm flex flex-col h-[350px]">
         <h3 className="font-bold text-foreground mb-6 flex items-center gap-2">
-          <TrendingUp size={18} className="text-primary" /> Savdo Dinamikasi (Kuny)
+          <TrendingUp size={18} className="text-primary" /> Savdo Dinamikasi
         </h3>
         <div className="flex-1 w-full min-h-0">
           <ResponsiveContainer width="100%" height="100%">
@@ -759,7 +757,7 @@ const Reports = () => {
         await window.electron.ipcRenderer.invoke('print-shift-products', { shift: selectedShift, products: shiftProducts });
         showToast('success', "Smena mahsulotlari chop etilmoqda...");
       } catch (error) {
-        console.error(error);
+        appLog.error('Reports', 'Xatolik', error);
         showToast('error', "Chop etishda xatolik yuz berdi");
       }
     };

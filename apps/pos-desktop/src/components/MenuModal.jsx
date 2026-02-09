@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { cn } from '../utils/cn';
 import { useGlobal } from '../context/GlobalContext';
+import { useIpcListener } from '../hooks/useIpcListener';
 
 const MenuModal = ({ isOpen, onClose, tableId, tableName }) => {
     const [categories, setCategories] = useState([]);
@@ -29,6 +30,11 @@ const MenuModal = ({ isOpen, onClose, tableId, tableName }) => {
             setActiveCategory('all');
         }
     }, [isOpen]);
+
+    // Realtime: menyu ochiq bo'lganda mahsulot/kategoriya o'zgarsa yangilansin
+    useIpcListener('db-change', (event, data) => {
+        if (isOpen && (data.type === 'products' || data.type === 'categories')) loadMenu();
+    });
 
     const loadMenu = async () => {
         try {

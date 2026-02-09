@@ -1,4 +1,5 @@
 const { db, notify, setRestaurantId } = require('../database.cjs');
+const { logger } = require('../logger.cjs');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -29,7 +30,7 @@ module.exports = {
           // Jadval yo'q bo'lsa (masalan orders)
         }
       });
-      console.log("🔄 Updated restaurant_id for all tables to:", settingsObj.restaurant_id);
+      logger.info('Sozlamalar', 'restaurant_id barcha jadvallarda yangilandi', settingsObj.restaurant_id);
     }
 
     const saveTransaction = db.transaction((settings) => {
@@ -79,16 +80,16 @@ module.exports = {
 
       db.backup(backupPath)
         .then(() => {
-          console.log('Backup successful:', backupPath);
+          logger.info('Sozlamalar', 'Baza backup muvaffaqiyatli', backupPath);
         })
         .catch((err) => {
-          console.error('Backup failed:', err);
+          logger.error('Sozlamalar', 'Backup muvaffaqiyatsiz', err);
           throw err;
         });
 
       return { success: true, path: backupPath };
     } catch (err) {
-      console.error(err);
+      logger.error('Sozlamalar', 'Backup xatosi', err);
       throw new Error("Backup qilib bo'lmadi: " + err.message);
     }
   }

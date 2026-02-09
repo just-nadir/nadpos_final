@@ -206,8 +206,7 @@ function startServer() {
     }
   });
 
-  // Static fayllarni ulash (Mobil Ilova uchun - Build ichida mobile-dist papkasi bo'ladi)
-  // DIQQAT: Yangi PWA 3000-portda ishlashi uchun static fayllar qayta ulandi.
+  // Static fayllarni ulash (Waiter PWA - mobile-dist). PWA va API bir xil serverda (PORT 3001).
   app.use(express.static(path.join(__dirname, '../mobile-dist')));
 
   // Barcha boshqa so'rovlar uchun index.html qaytarish (SPA uchun)

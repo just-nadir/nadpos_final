@@ -199,7 +199,8 @@ function registerIpcHandlers(ipcMain) {
                 }
             }
         }
-        return { ips: addresses, port: 3000 };
+        // Waiter PWA va API Electron serverda 3001 portda ishlaydi (server.cjs)
+        return { ips: addresses, port: 3001 };
     });
 
     // MACHINE ID (Litsenziya uchun)

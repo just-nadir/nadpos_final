@@ -14,7 +14,7 @@ import { cn } from '../utils/cn';
 import { useGlobal } from '../context/GlobalContext'; // Restore useGlobal
 
 const MobileAppSettings = () => {
-  const [networkInfo, setNetworkInfo] = useState({ ips: [], port: 3000 });
+  const [networkInfo, setNetworkInfo] = useState({ ips: [], port: 3001 });
   const [selectedIp, setSelectedIp] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -29,7 +29,7 @@ const MobileAppSettings = () => {
         })
         .catch(err => {
           console.error("IP Error:", err);
-          setNetworkInfo({ ips: [], port: 3000 });
+          setNetworkInfo({ ips: [], port: 3001 });
         });
     }
   }, []);

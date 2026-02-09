@@ -85,12 +85,9 @@ export const GlobalProvider = ({ children }) => {
           setLoading(false);
         }
       } else {
-        // Browser Mode (Mobile) - API orqali yuklash
+        // Browser Mode (Waiter PWA) - bir xil origin dan API (dist da 3001 portda serve qilinadi)
         try {
-          const API_PORT = 3000;
-          const protocol = window.location.protocol;
-          const hostname = window.location.hostname;
-          const apiUrl = `${protocol}//${hostname}:${API_PORT}/api/settings`;
+          const apiUrl = `${window.location.origin}/api/settings`;
 
           const res = await axios.get(apiUrl);
           setSettings(res.data || {});

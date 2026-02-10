@@ -23,9 +23,7 @@ export function Navbar({ onContactClick }) {
             <div className="container mx-auto px-6 flex items-center justify-between">
                 {/* Logo */}
                 <a href="/" className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-dark rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-                        <span className="text-xl font-bold text-white">N</span>
-                    </div>
+                    <img src="/icon.png" alt="NadPOS" className="w-10 h-10 rounded-xl object-contain" />
                     <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
                         NadPOS
                     </span>

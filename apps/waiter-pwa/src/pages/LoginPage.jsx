@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Delete, Loader2, CheckCircle2 } from 'lucide-react';
+import { Delete, Loader2, CheckCircle2 } from 'lucide-react';
 import { login } from '../services/api';
 import { saveUser } from '../utils/storage';
 
@@ -90,8 +90,8 @@ export default function LoginPage() {
                     transition={{ duration: 0.6, ease: "easeOut" }}
                     className="text-center mb-12"
                 >
-                    <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-2xl shadow-indigo-500/20 ring-4 ring-indigo-500/10">
-                        <User size={36} strokeWidth={2} className="text-white" />
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-2xl overflow-hidden flex items-center justify-center shadow-2xl shadow-indigo-500/20 ring-4 ring-indigo-500/10 bg-slate-900">
+                        <img src="/icon.png" alt="NadPOS" className="w-full h-full object-contain" />
                     </div>
                     <h1 className="text-2xl font-bold text-white tracking-tight mb-2">NadPOS</h1>
                     <div className="flex items-center justify-center gap-2">

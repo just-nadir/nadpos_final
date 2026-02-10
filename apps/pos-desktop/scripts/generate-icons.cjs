@@ -1,19 +1,27 @@
 /**
- * icon.svg dan PNG iconlar yaratadi:
+ * Logo.png dan barcha PNG iconlarni yaratadi:
  * - pos-desktop/icon.png (512x512) — Electron oyna va installer uchun
- * - waiter-pwa/public/icon-192.png, icon-512.png — PWA manifest uchun
+ * - waiter-pwa/public/icon.png, icon-192.png, icon-512.png — PWA va favicon
+ * - barcha app public/icon.png — favicon uchun
  * Ishga tushirish: npm run generate-icons (pos-desktop papkasida)
  */
 const fs = require('fs');
 const path = require('path');
 
 const monorepoRoot = path.join(__dirname, '../../..');
-const iconSvg = path.join(monorepoRoot, 'icon.svg');
+const logoPng = path.join(monorepoRoot, 'Logo.png');
 const posDesktopDir = path.join(__dirname, '..');
 const waiterPublicDir = path.join(monorepoRoot, 'apps', 'waiter-pwa', 'public');
+const appsPublicDirs = [
+  path.join(monorepoRoot, 'apps', 'pos-desktop', 'public'),
+  path.join(monorepoRoot, 'apps', 'waiter-pwa', 'public'),
+  path.join(monorepoRoot, 'apps', 'super-admin', 'public'),
+  path.join(monorepoRoot, 'apps', 'restaurant-admin', 'public'),
+  path.join(monorepoRoot, 'apps', 'landing-page', 'public')
+];
 
-if (!fs.existsSync(iconSvg)) {
-  console.error('❌ icon.svg topilmadi:', iconSvg);
+if (!fs.existsSync(logoPng)) {
+  console.error('❌ Logo.png topilmadi:', logoPng);
   process.exit(1);
 }
 
@@ -26,10 +34,12 @@ async function run() {
     process.exit(1);
   }
 
-  const svgBuffer = fs.readFileSync(iconSvg);
+  const logoBuffer = fs.readFileSync(logoPng);
+  const sharpLogo = sharp(logoBuffer);
 
   try {
-    await sharp(svgBuffer)
+    await sharpLogo
+      .clone()
       .resize(512, 512)
       .png()
       .toFile(path.join(posDesktopDir, 'icon.png'));
@@ -39,29 +49,38 @@ async function run() {
     process.exit(1);
   }
 
-  if (!fs.existsSync(waiterPublicDir)) {
-    console.log('⚠️ waiter-pwa/public topilmadi, PWA iconlar o\'tkazib yuborildi.');
-    return;
+  if (fs.existsSync(waiterPublicDir)) {
+    try {
+      await sharpLogo.clone().resize(192, 192).png().toFile(path.join(waiterPublicDir, 'icon-192.png'));
+      console.log('✅ icon-192.png: waiter-pwa/public/');
+    } catch (err) {
+      console.error('❌ icon-192.png xato:', err.message);
+    }
+    try {
+      await sharpLogo.clone().resize(512, 512).png().toFile(path.join(waiterPublicDir, 'icon-512.png'));
+      console.log('✅ icon-512.png: waiter-pwa/public/');
+    } catch (err) {
+      console.error('❌ icon-512.png xato:', err.message);
+    }
+    try {
+      await sharpLogo.clone().resize(512, 512).png().toFile(path.join(waiterPublicDir, 'icon.png'));
+      console.log('✅ icon.png: waiter-pwa/public/');
+    } catch (err) {
+      console.error('❌ icon.png (waiter) xato:', err.message);
+    }
   }
 
-  try {
-    await sharp(svgBuffer)
-      .resize(192, 192)
-      .png()
-      .toFile(path.join(waiterPublicDir, 'icon-192.png'));
-    console.log('✅ icon-192.png yaratildi: waiter-pwa/public/');
-  } catch (err) {
-    console.error('❌ icon-192.png xato:', err.message);
-  }
-
-  try {
-    await sharp(svgBuffer)
-      .resize(512, 512)
-      .png()
-      .toFile(path.join(waiterPublicDir, 'icon-512.png'));
-    console.log('✅ icon-512.png yaratildi: waiter-pwa/public/');
-  } catch (err) {
-    console.error('❌ icon-512.png xato:', err.message);
+  for (const dir of appsPublicDirs) {
+    if (!fs.existsSync(dir)) continue;
+    const out = path.join(dir, 'icon.png');
+    if (out === path.join(posDesktopDir, 'icon.png')) continue;
+    if (out === path.join(waiterPublicDir, 'icon.png')) continue;
+    try {
+      await sharpLogo.clone().resize(512, 512).png().toFile(out);
+      console.log('✅ icon.png:', path.relative(monorepoRoot, out));
+    } catch (err) {
+      console.error('❌', out, err.message);
+    }
   }
 }
 

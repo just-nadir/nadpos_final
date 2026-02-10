@@ -6,7 +6,9 @@ const { initDB, onChange } = require('./database.cjs');
 const startServer = require('./server.cjs');
 const registerIpcHandlers = require('./ipcHandlers.cjs');
 const { initUpdater } = require('./services/updaterService.cjs');
-const { startSyncService } = require('./services/syncService.cjs');
+const { startSyncService, getSyncStatus } = require('./services/syncService.cjs');
+
+let mainWindow = null;
 
 process.on('uncaughtException', (error) => {
   logger.error('Main', 'Kritik xatolik (uncaughtException)', error);
@@ -53,6 +55,23 @@ function createWindow() {
     }
   }
 
+  mainWindow = win;
+
+  // Sinx holatini rendererga yuborish (har 2 soniyada)
+  const syncStatusInterval = setInterval(() => {
+    const w = mainWindow;
+    if (w && !w.isDestroyed() && w.webContents && !w.webContents.isDestroyed()) {
+      w.webContents.send('sync-status', getSyncStatus());
+    } else {
+      clearInterval(syncStatusInterval);
+    }
+  }, 2000);
+
+  win.on('closed', () => {
+    mainWindow = null;
+    clearInterval(syncStatusInterval);
+  });
+
   // Initialize Auto Updater
   initUpdater(win);
 
@@ -67,6 +86,8 @@ function createWindow() {
 ipcMain.handle('log-from-renderer', (e, payload) => {
   logFromRenderer(payload);
 });
+
+ipcMain.handle('get-sync-status', () => getSyncStatus());
 
 app.whenReady().then(() => {
   try {

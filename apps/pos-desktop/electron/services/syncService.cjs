@@ -1,4 +1,3 @@
-
 const axios = require('axios');
 const { logger } = require('../logger.cjs');
 const { db } = require('../database.cjs');
@@ -12,6 +11,26 @@ function getSyncUrl() {
 const CHECK_INTERVAL = 60000; // 1 minute
 
 let isSyncing = false;
+let lastSyncTime = null;
+let lastError = null;
+
+/** Renderer uchun holat: syncing | synced | error | offline */
+function getSyncStatus() {
+    const token = db.prepare("SELECT value FROM settings WHERE key = 'auth_token'").get();
+    const hasAuth = !!token?.value;
+    const queueCount = db.prepare('SELECT COUNT(*) as c FROM sync_queue').get()?.c ?? 0;
+
+    if (!hasAuth) {
+        return { status: 'offline', lastSync: lastSyncTime, error: null, queueCount: 0 };
+    }
+    if (isSyncing) {
+        return { status: 'syncing', lastSync: lastSyncTime, error: null, queueCount };
+    }
+    if (lastError) {
+        return { status: 'error', lastSync: lastSyncTime, error: lastError, queueCount };
+    }
+    return { status: 'synced', lastSync: lastSyncTime, error: null, queueCount };
+}
 
 async function startSyncService() {
     logger.info('Sinx', 'Sinx xizmati ishga tushdi');
@@ -54,6 +73,7 @@ async function processSyncQueue() {
     }
 
     isSyncing = true;
+    lastError = null;
     logger.info('Sinx', 'Navbat qayta ishlanmoqda', { count: queueItems.length });
 
     try {
@@ -88,8 +108,11 @@ async function processSyncQueue() {
         const ids = queueItems.map(i => i.id);
         const placeholders = ids.map(() => '?').join(',');
         db.prepare(`DELETE FROM sync_queue WHERE id IN (${placeholders})`).run(...ids);
+        lastSyncTime = new Date().toISOString();
+        lastError = null;
         logger.info('Sinx', 'Batch yuborildi, navbat tozalandi');
     } catch (e) {
+        lastError = e.response?.data?.message || e.message || 'Sinx xatosi';
         logger.error('Sinx', 'Sinx muvaffaqiyatsiz', e);
         if (e.response) logger.error('Sinx', 'Server javobi', { status: e.response.status, data: e.response.data });
     } finally {
@@ -97,4 +120,4 @@ async function processSyncQueue() {
     }
 }
 
-module.exports = { startSyncService, triggerSyncNow };
+module.exports = { startSyncService, triggerSyncNow, getSyncStatus };

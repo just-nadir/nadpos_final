@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutGrid, UtensilsCrossed, Settings, LogOut, Square, Users, FileText, PieChart, MessageSquare, Lock, Search, Cloud, CloudOff, RefreshCw, Package, Moon, Sun, Monitor, Calendar } from 'lucide-react';
+import { LayoutGrid, UtensilsCrossed, Settings, LogOut, Square, Users, FileText, PieChart, MessageSquare, Lock, Search, Package, Moon, Sun, Monitor, Calendar } from 'lucide-react';
 import { APP_INFO } from '../config/appConfig';
 import { cn } from '../utils/cn';
 import { Button } from './ui/button';
@@ -102,6 +102,28 @@ const Sidebar = ({ activePage, onNavigate, onLogout, user, onCloseShift, syncSta
           >
             <Lock size={24} />
           </button>
+        )}
+
+        {/* Sinx holati — chiziq, holat faqat hover da */}
+        {syncStatus && (
+          <div
+            className={cn(
+              'w-full h-1 rounded-full transition-colors cursor-default',
+              syncStatus.status === 'syncing' && 'bg-amber-500 animate-pulse',
+              syncStatus.status === 'synced' && 'bg-emerald-500',
+              syncStatus.status === 'error' && 'bg-destructive',
+              syncStatus.status === 'offline' && 'bg-muted-foreground/40'
+            )}
+            title={
+              syncStatus.status === 'syncing'
+                ? 'Sinxronlashmoqda...'
+                : syncStatus.status === 'synced'
+                  ? (syncStatus.lastSync ? `Oxirgi sinx: ${new Date(syncStatus.lastSync).toLocaleTimeString('uz')}` : 'Sinxron')
+                  : syncStatus.status === 'error'
+                    ? (syncStatus.error || 'Xato')
+                    : 'Serverga ulanmagan (login qiling)'
+            }
+          />
         )}
 
         <div className="flex flex-col items-center gap-3 mb-2">

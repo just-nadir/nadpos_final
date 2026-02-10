@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { ShieldAlert, CheckCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useGlobal } from '../context/GlobalContext';
@@ -79,6 +79,14 @@ const DesktopLayout = () => {
   useIpcListener('sync-status', (event, data) => {
     setSyncStatus(data);
   });
+
+  // Ilk yuklanishda sinx holatini darhol so‘rash
+  useEffect(() => {
+    if (!window.electron?.ipcRenderer?.invoke) return;
+    window.electron.ipcRenderer.invoke('get-sync-status').then((data) => {
+      if (data) setSyncStatus(data);
+    }).catch(() => {});
+  }, []);
 
   if (loading) {
     return <div className="flex h-screen items-center justify-center text-gray-500 font-bold bg-gray-100">Tizim yuklanmoqda...</div>;

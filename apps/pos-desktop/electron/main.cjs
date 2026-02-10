@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { logger, logFromRenderer } = require('./logger.cjs');
 const { initDB, onChange } = require('./database.cjs');
 const startServer = require('./server.cjs');
@@ -20,10 +21,12 @@ if (app) {
 }
 
 function createWindow() {
+  const iconPath = path.join(__dirname, '../icon.png');
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     title: 'NadPOS Restoran',
+    icon: fs.existsSync(iconPath) ? iconPath : undefined,
     backgroundColor: '#f3f4f6',
     webPreferences: {
       nodeIntegration: false,

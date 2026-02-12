@@ -24,6 +24,7 @@ import {
     PieChart,
     Pie,
     Cell,
+    Legend,
     AreaChart,
     Area,
 } from 'recharts';
@@ -268,38 +269,58 @@ export default function ReportsPage() {
     ];
 
     return (
-        <div className="flex flex-1 min-h-0">
-            <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shrink-0">
-                <div className="p-6 border-b border-slate-100">
-                    <h2 className="text-xl font-bold text-slate-800">Hisobotlar</h2>
-                    <p className="text-sm text-slate-500">Boshqaruv va tahlil</p>
+        <div className="flex flex-col lg:flex-row flex-1 min-h-0">
+            {/* Sidebar: mobilda yuqorida, lg da chapda */}
+            <aside className="lg:w-72 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shrink-0">
+                <div className="p-4 lg:p-6 border-b border-slate-100">
+                    <h2 className="text-lg lg:text-xl font-bold text-slate-800">Hisobotlar</h2>
+                    <p className="text-xs lg:text-sm text-slate-500">Boshqaruv va tahlil</p>
                 </div>
-                <div className="p-4 flex flex-col gap-4 flex-1 overflow-y-auto">
+                <div className="p-4 flex flex-col lg:flex-col gap-4 flex-1 overflow-y-auto">
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                         <p className="text-xs font-semibold text-slate-500 mb-3 flex items-center gap-2">
                             <Calendar size={14} /> Sana oralig&apos;i
                         </p>
-                        <input
-                            type="date"
-                            value={dateRange.startDate}
-                            onChange={(e) => setDateRange((r) => ({ ...r, startDate: e.target.value }))}
-                            className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm mb-2"
-                        />
-                        <input
-                            type="date"
-                            value={dateRange.endDate}
-                            onChange={(e) => setDateRange((r) => ({ ...r, endDate: e.target.value }))}
-                            className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm mb-3"
-                        />
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                            <input
+                                type="date"
+                                value={dateRange.startDate}
+                                onChange={(e) => setDateRange((r) => ({ ...r, startDate: e.target.value }))}
+                                className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm"
+                            />
+                            <input
+                                type="date"
+                                value={dateRange.endDate}
+                                onChange={(e) => setDateRange((r) => ({ ...r, endDate: e.target.value }))}
+                                className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm"
+                            />
+                        </div>
                         <button
                             onClick={loadData}
                             disabled={loading}
-                            className="w-full py-2.5 bg-slate-900 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="w-full py-2.5 bg-slate-900 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50 touch-manipulation"
                         >
                             <Filter size={16} /> {loading ? 'Yuklanmoqda...' : 'Yangilash'}
                         </button>
                     </div>
-                    <nav className="space-y-1">
+                    {/* Mobil: gorizontal tablar */}
+                    <div className="lg:hidden overflow-x-auto pb-1 -mx-1">
+                        <div className="flex gap-2 min-w-0">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => { setActiveTab(tab.id); if (tab.id === 'shifts') setSelectedShift(null); }}
+                                    className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors touch-manipulation ${
+                                        activeTab === tab.id ? 'bg-slate-900 text-white' : 'text-slate-600 bg-slate-100 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    <tab.icon size={18} /> {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    {/* Desktop: vertikal menyu */}
+                    <nav className="hidden lg:block space-y-1">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
@@ -315,10 +336,10 @@ export default function ReportsPage() {
                 </div>
             </aside>
 
-            <main className="flex-1 flex flex-col min-w-0 p-6 overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800">
+            <main className="flex-1 flex flex-col min-w-0 p-4 sm:p-6 overflow-y-auto">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+                    <div className="min-w-0">
+                        <h1 className="text-lg sm:text-2xl font-bold text-slate-800">
                             {activeTab === 'dashboard' && 'Biznes holati'}
                             {activeTab === 'staff' && 'Xodimlar samaradorligi'}
                             {activeTab === 'products' && 'Menyu reytingi'}
@@ -326,22 +347,22 @@ export default function ReportsPage() {
                             {activeTab === 'shifts' && (selectedShift ? 'Smena tafsilotlari' : 'Smenalar tarixi')}
                             {activeTab === 'trash' && 'Bekor qilinganlar'}
                         </h1>
-                        <p className="text-sm text-slate-500 mt-1">
+                        <p className="text-xs sm:text-sm text-slate-500 mt-1">
                             <Calendar size={14} className="inline mr-1" />
                             {formatDate(dateRange.startDate)} — {formatDate(dateRange.endDate)}
                         </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right shrink-0">
                         <p className="text-xs text-slate-500 font-medium">Jami tushum</p>
-                        <p className="text-xl font-bold text-slate-800">
+                        <p className="text-lg sm:text-xl font-bold text-slate-800">
                             {selectedShift ? (selectedShift.total_sales || 0).toLocaleString() : stats.totalRevenue.toLocaleString()} so&apos;m
                         </p>
                     </div>
                 </div>
 
                 {activeTab === 'dashboard' && (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-4 sm:space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                             <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex justify-between items-start">
                                 <div>
                                     <p className="text-xs font-semibold text-slate-500 uppercase">Jami savdo</p>
@@ -364,10 +385,10 @@ export default function ReportsPage() {
                                 <TrendingUp className="text-orange-500 h-8 w-8" />
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm h-80">
-                                <h3 className="font-bold text-slate-800 mb-4">Soatbay savdo</h3>
-                                <ResponsiveContainer width="100%" height="90%">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                            <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-100 shadow-sm h-64 sm:h-80">
+                                <h3 className="font-bold text-slate-800 mb-4 text-sm sm:text-base">Soatbay savdo</h3>
+                                <ResponsiveContainer width="100%" height="85%">
                                     <AreaChart data={stats.hourlySales}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="hour" tickFormatter={(h) => `${h}:00`} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -377,32 +398,44 @@ export default function ReportsPage() {
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
-                            <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm h-80">
-                                <h3 className="font-bold text-slate-800 mb-4">To&apos;lov turlari</h3>
-                                <ResponsiveContainer width="100%" height="90%">
+                            <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-100 shadow-sm h-64 sm:h-80">
+                                <h3 className="font-bold text-slate-800 mb-4 text-sm sm:text-base">To&apos;lov turlari</h3>
+                                <ResponsiveContainer width="100%" height="85%">
                                     <PieChart>
                                         <Pie
                                             data={stats.paymentMethods}
                                             dataKey="value"
                                             nameKey="name"
                                             cx="50%"
-                                            cy="50%"
-                                            innerRadius={50}
-                                            outerRadius={80}
+                                            cy="45%"
+                                            innerRadius={40}
+                                            outerRadius={65}
                                             paddingAngle={2}
-                                            label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                                            label={false}
                                         >
                                             {stats.paymentMethods.map((_, i) => (
                                                 <Cell key={i} fill={COLORS[i % COLORS.length]} />
                                             ))}
                                         </Pie>
                                         <Tooltip formatter={(v: number | undefined) => (v ?? 0).toLocaleString()} />
+                                        <Legend
+                                            layout="horizontal"
+                                            verticalAlign="bottom"
+                                            align="center"
+                                            wrapperStyle={{ fontSize: 11 }}
+                                            iconSize={10}
+                                            formatter={(value, entry) => {
+                                                const val = Number(entry?.payload?.value ?? 0);
+                                                const pct = stats.totalRevenue ? ((val / stats.totalRevenue) * 100).toFixed(0) : '0';
+                                                return <span style={{ color: '#334155', fontSize: 11 }}>{value} {pct}%</span>;
+                                            }}
+                                        />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
                         </div>
-                        <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm h-72">
-                            <h3 className="font-bold text-slate-800 mb-4">Savdo dinamikasi (kun)</h3>
+                        <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-100 shadow-sm h-64 sm:h-72">
+                            <h3 className="font-bold text-slate-800 mb-4 text-sm sm:text-base">Savdo dinamikasi (kun)</h3>
                             <ResponsiveContainer width="100%" height="85%">
                                 <BarChart data={trendData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -417,8 +450,8 @@ export default function ReportsPage() {
                 )}
 
                 {activeTab === 'staff' && (
-                    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                        <table className="w-full text-left">
+                    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
+                        <table className="w-full text-left min-w-[320px]">
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
                                     <th className="px-6 py-4 font-semibold text-slate-600 text-sm">Ofitsiant</th>
@@ -444,8 +477,8 @@ export default function ReportsPage() {
                 )}
 
                 {activeTab === 'products' && (
-                    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                        <table className="w-full text-left">
+                    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
+                        <table className="w-full text-left min-w-[320px]">
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
                                     <th className="px-6 py-4 font-semibold text-slate-600 text-sm">Mahsulot</th>
@@ -471,8 +504,8 @@ export default function ReportsPage() {
                 )}
 
                 {activeTab === 'history' && (
-                    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                        <table className="w-full text-left">
+                    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
+                        <table className="w-full text-left min-w-[500px]">
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
                                     <th className="px-6 py-4 font-semibold text-slate-600 text-sm">#Chek</th>
@@ -504,8 +537,8 @@ export default function ReportsPage() {
                 )}
 
                 {activeTab === 'shifts' && !selectedShift && (
-                    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                        <table className="w-full text-left">
+                    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
+                        <table className="w-full text-left min-w-[480px]">
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
                                     <th className="px-6 py-4 font-semibold text-slate-600 text-sm">#</th>
@@ -549,15 +582,15 @@ export default function ReportsPage() {
                     <div className="space-y-4">
                         <button
                             onClick={() => { setSelectedShift(null); setShiftSales([]); }}
-                            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium"
+                            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium touch-manipulation py-1"
                         >
                             <ChevronLeft size={18} /> Ortga
                         </button>
-                        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                            <h3 className="px-6 py-4 border-b border-slate-100 font-bold text-slate-800">
+                        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
+                            <h3 className="px-4 sm:px-6 py-4 border-b border-slate-100 font-bold text-slate-800 text-sm sm:text-base">
                                 Smena #{selectedShift.shift_number ?? selectedShift.id.slice(0, 8)} — {selectedShift.cashier_name}
                             </h3>
-                            <table className="w-full text-left">
+                            <table className="w-full text-left min-w-[360px]">
                                 <thead className="bg-slate-50 border-b border-slate-100">
                                     <tr>
                                         <th className="px-6 py-4 font-semibold text-slate-600 text-sm">#Chek</th>
@@ -583,9 +616,9 @@ export default function ReportsPage() {
                             </table>
                         </div>
                         {shiftProducts.length > 0 && (
-                            <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                                <h3 className="px-6 py-4 border-b border-slate-100 font-bold text-slate-800">Smena mahsulotlari</h3>
-                                <table className="w-full text-left">
+                            <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
+                                <h3 className="px-4 sm:px-6 py-4 border-b border-slate-100 font-bold text-slate-800 text-sm sm:text-base">Smena mahsulotlari</h3>
+                                <table className="w-full text-left min-w-[320px]">
                                     <thead className="bg-slate-50 border-b border-slate-100">
                                         <tr>
                                             <th className="px-6 py-4 font-semibold text-slate-600 text-sm">Mahsulot</th>
@@ -609,8 +642,8 @@ export default function ReportsPage() {
                 )}
 
                 {activeTab === 'trash' && (
-                    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                        <table className="w-full text-left">
+                    <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
+                        <table className="w-full text-left min-w-[400px]">
                             <thead className="bg-slate-50 border-b border-slate-100">
                                 <tr>
                                     <th className="px-6 py-4 font-semibold text-slate-600 text-sm">Stol</th>

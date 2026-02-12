@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { DollarSign, ShoppingBag, CreditCard, TrendingUp } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { statsApi, getToday, getMonthStartEnd, getLast7Days } from '../services/stats.service';
-import { formatMoney, formatInt, formatDateShort } from '../utils/format';
+import { formatMoney, formatInt, formatDateDdMm } from '../utils/format';
 
 const DEFAULT_STATS = { todaySales: 0, todayOrders: 0, monthSales: 0, avgCheck: 0 };
 
@@ -78,7 +78,7 @@ export default function DashboardPage() {
     const chartData = useMemo(() => {
         const arr = ensureArray<TrendItem>(trendData);
         return arr.map(({ day, total }: TrendItem) => ({
-            name: formatDateShort(day),
+            name: formatDateDdMm(day),
             sales: formatInt(total),
         }));
     }, [trendData]);
@@ -118,42 +118,42 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">Asosiy</h2>
-                <div className="flex items-center justify-center py-20 text-slate-500">Yuklanmoqda...</div>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-4 sm:mb-6">Asosiy</h2>
+                <div className="flex items-center justify-center py-12 sm:py-20 text-slate-500">Yuklanmoqda...</div>
             </div>
         );
     }
 
     return (
         <div>
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Asosiy</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-4 sm:mb-6">Asosiy</h2>
             {error && (
                 <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
                     {error}
                 </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 {starCards.map((stat, index) => (
-                    <div key={index} className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-4">
+                    <div key={index} className="bg-white p-4 sm:p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-3 sm:mb-4">
                             <div className={`p-3 rounded-lg ${stat.bg} ${stat.color}`}>
-                                <stat.icon className="h-6 w-6" />
+                                <stat.icon className="h-5 w-5 sm:h-6 sm:w-6" />
                             </div>
                         </div>
-                        <p className="text-sm text-slate-500 font-medium mb-1">{stat.title}</p>
-                        <h3 className="text-2xl font-bold text-slate-800">{stat.value}</h3>
+                        <p className="text-xs sm:text-sm text-slate-500 font-medium mb-1">{stat.title}</p>
+                        <h3 className="text-lg sm:text-2xl font-bold text-slate-800 break-words">{stat.value}</h3>
                     </div>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-800 mb-6">Haftalik Savdo Dinamikasi</h3>
-                    <div className="w-full" style={{ height: 320, minHeight: 320 }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-100 shadow-sm">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-4 sm:mb-6">Haftalik Savdo Dinamikasi</h3>
+                    <div className="w-full h-[240px] sm:h-[320px] min-h-[200px]">
                         {chartData.length === 0 ? (
-                            <div className="h-full flex items-center justify-center text-slate-400" style={{ minHeight: 280 }}>Ma&apos;lumot yo&apos;q</div>
+                            <div className="h-full flex items-center justify-center text-slate-400 min-h-[180px]">Ma&apos;lumot yo&apos;q</div>
                         ) : (
-                            <ResponsiveContainer width="100%" height={300}>
+                            <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData}>
                                     <defs>
                                         <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
@@ -172,9 +172,9 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-800 mb-6">Bugun eng ko&apos;p sotilganlar</h3>
-                    <div className="space-y-4">
+                <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-100 shadow-sm">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-4 sm:mb-6">Bugun eng ko&apos;p sotilganlar</h3>
+                    <div className="space-y-3 sm:space-y-4">
                         {topProducts.length === 0 ? (
                             <div className="text-slate-400">Ma&apos;lumot yo&apos;q</div>
                         ) : (

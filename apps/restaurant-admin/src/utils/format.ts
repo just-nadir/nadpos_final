@@ -32,3 +32,17 @@ export function formatDateShort(val: unknown): string {
         return '';
     }
 }
+
+/** Sana dd.mm ko‘rinishida (grafik o‘qi va boshqalar uchun) */
+export function formatDateDdMm(val: unknown): string {
+    if (val == null || val === '') return '';
+    try {
+        const d = typeof val === 'string' || typeof val === 'number' ? new Date(val + (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val) ? 'T12:00:00Z' : '')) : null;
+        if (!d || Number.isNaN(d.getTime())) return '';
+        const day = String(d.getUTCDate()).padStart(2, '0');
+        const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+        return `${day}.${month}`;
+    } catch {
+        return '';
+    }
+}
